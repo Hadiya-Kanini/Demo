@@ -1,187 +1,258 @@
 # Design System
 
+Purpose
+- Canonical set of tokens, components and usage rules to be used across the Figma file and implementation teams for Authentication & Admin features. Single source of truth for colors, typography, spacing, radii, elevation and motion.
+
+---
+
 ## 1. Design Tokens
 
-Design tokens are the visual atoms of our design system. They represent stylistic choices, such as color, typography, and spacing, in a platform-agnostic way.
+Primitive & Semantic Tokens (YAML excerpt)
+```yaml
+colors:
+  brand:
+    500: "#0A6CFF"
+  semantic:
+    success: "#16A34A"
+    warning: "#F59E0B"
+    error: "#DC2626"
+    info: "#3B82F6"
+  neutral:
+    900: "#0B1220"
+    700: "#223247"
+    500: "#6B7280"
+    300: "#E5E7EB"
+    100: "#F9FAFB"
 
-### 1.1. Colors
+semantic_tokens:
+  color.primary: "{colors.brand.500}"
+  color.background: "{colors.neutral.100}"
+  color.surface: "#FFFFFF"
+  color.text.primary: "{colors.neutral.900}"
+  color.text.secondary: "{colors.neutral.700}"
+  color.error: "{colors.semantic.error}"
+  color.success: "{colors.semantic.success}"
+```
 
-| Token Name          | Value          | Description                                    | Usage                                         |
-| :------------------ | :------------- | :--------------------------------------------- | :-------------------------------------------- |
-| `color-primary`     | `#007BFF`      | Main brand color, for primary actions.         | Primary buttons, active states                |
-| `color-primary-dark`| `#0056B3`      | Darker primary for hover/pressed states.       | Primary button hover, active links            |
-| `color-secondary`   | `#6C757D`      | Secondary brand color, for less prominent actions. | Secondary buttons, secondary text             |
-| `color-text-primary`| `#212529`      | Primary text color for readability.            | Headings, body text                           |
-| `color-text-secondary`| `#6C757D`      | Secondary text color for less emphasis.        | Subheaders, helper text                       |
-| `color-text-placeholder`| `#ADB5BD`      | Placeholder text color in input fields.        | Input field placeholders                      |
-| `color-text-link`   | `#007BFF`      | Link text color.                               | Hyperlinks, "Forgot Password?"                |
-| `color-background-page`| `#F8F9FA`      | Main background color for pages.               | Page background                               |
-| `color-background-card`| `#FFFFFF`      | Background for cards and elevated elements.    | Login form container                          |
-| `color-border-default`| `#CED4DA`      | Default border color for inputs.               | Input field borders                           |
-| `color-border-focused`| `#80BDFF`      | Border color for focused inputs.               | Input field focus state                       |
-| `color-error`       | `#DC3545`      | Base error color.                              | Error icons, critical alerts                  |
-| `color-error-text`  | `#B02A37`      | Darker error text for better contrast.         | Error messages                                |
-| `color-error-subtle`| `#F8D7DA`      | Light background for error alerts.             | Background of error message banners           |
-| `color-success`     | `#28A745`      | Base success color.                            | Success messages (out of scope for login)     |
-| `color-disabled`    | `#E9ECEF`      | Background for disabled elements.              | Disabled buttons, inputs                      |
-| `color-disabled-text`| `#ADB5BD`      | Text color for disabled elements.              | Disabled button text, disabled input text     |
+Typography
+```yaml
+typography:
+  fonts:
+    display: "Bricolage Grotesque, system-ui, sans-serif"
+    body: "IBM Plex Sans, system-ui, sans-serif"
+    monospace: "JetBrains Mono, monospace"
+  scale:
+    h1:
+      size: 32px
+      weight: 700
+      lineHeight: 40px
+    h2:
+      size: 24px
+      weight: 600
+      lineHeight: 32px
+    body:
+      size: 16px
+      weight: 400
+      lineHeight: 24px
+    caption:
+      size: 12px
+      weight: 400
+      lineHeight: 16px
+```
 
-### 1.2. Typography
+Spacing
+- Base: 8px
+- Scale: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64
 
-**Font Family:** `Inter`, `sans-serif` (or project's defined brand font)
+Radii
+- radius.small: 4px
+- radius.medium: 8px
+- radius.large: 16px
+- radius.pill: 9999px
 
-| Token Name             | Font Size   | Line Height | Font Weight | Letter Spacing | Usage                                         |
-| :--------------------- | :---------- | :---------- | :---------- | :------------- | :-------------------------------------------- |
-| `typography-heading-h1`| 40px (2.5rem)| 1.2         | 700 (Bold)  | -0.02em        | Main page titles, "Welcome Back"              |
-| `typography-heading-h2`| 32px (2rem) | 1.25        | 700 (Bold)  | -0.02em        | Section titles (not used on Login Page)       |
-| `typography-body-lg`   | 18px (1.125rem)| 1.5         | 400 (Regular)| 0              | Subheaders, prominent body text               |
-| `typography-body-md`   | 16px (1rem) | 1.5         | 400 (Regular)| 0              | Default body text, input field text           |
-| `typography-body-sm`   | 14px (0.875rem)| 1.4         | 400 (Regular)| 0              | Labels, helper text, error messages           |
-| `typography-label`     | 14px (0.875rem)| 1.4         | 600 (Semi-Bold)| 0.02em         | Form input labels                             |
-| `typography-button-primary`| 16px (1rem) | 1.5         | 600 (Semi-Bold)| 0.02em         | Primary button text                           |
-| `typography-link`      | 14px (0.875rem)| 1.4         | 500 (Medium) | 0              | Link text, "Forgot Password?"                 |
+Elevation / Shadows
+- elevation.1: 0px 1px 2px rgba(11,18,32,0.04)
+- elevation.2: 0px 4px 8px rgba(11,18,32,0.06)
+- elevation.3: 0px 8px 24px rgba(11,18,32,0.08)
 
-### 1.3. Spacing
+Motion
+- duration.fast: 150ms
+- duration.normal: 200ms
+- duration.slow: 300ms
+- easing.default: cubic-bezier(.2, .8, .2, 1)
+- reduceMotion: respects prefers-reduced-motion
 
-A 4-pixel base unit for consistent spacing.
+Mode Support
+- Light mode: tokens above
+- Dark mode: inverted semantic tokens + adjusted neutrals (documented in 01_Foundations)
+- High contrast variants: ensure text >= 4.5:1
 
-| Token Name       | Value | Description                  |
-| :--------------- | :---- | :--------------------------- |
-| `spacing-xs`     | 4px   | Extra small spacing          |
-| `spacing-sm`     | 8px   | Small spacing                |
-| `spacing-md`     | 16px  | Medium spacing (default)     |
-| `spacing-lg`     | 24px  | Large spacing                |
-| `spacing-xl`     | 32px  | Extra large spacing          |
-| `spacing-xxl`    | 48px  | Double XL spacing            |
-| `spacing-3xl`    | 64px  | Triple XL spacing            |
-
-### 1.4. Shadows
-
-| Token Name          | Value                                 | Description                        |
-| :------------------ | :------------------------------------ | :--------------------------------- |
-| `shadow-sm`         | `0 1px 2px rgba(0, 0, 0, 0.05)`       | Subtle shadow, for inputs.         |
-| `shadow-md`         | `0 4px 6px rgba(0, 0, 0, 0.1)`        | Medium shadow, for cards.          |
-| `shadow-lg`         | `0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05)` | Larger shadow, for prominent elements. |
-
-### 1.5. Borders & Radii
-
-| Token Name          | Value          | Description                    |
-| :------------------ | :------------- | :----------------------------- |
-| `border-radius-sm`  | 4px            | Small radius, for inputs       |
-| `border-radius-md`  | 8px            | Medium radius, for buttons     |
-| `border-input-default`| `1px solid color-border-default` | Default input border style     |
-| `border-input-focused`| `2px solid color-border-focused` | Focused input border style     |
-| `border-input-error`| `1px solid color-error`          | Error input border style       |
-
-### 1.6. Animations
-
-| Token Name          | Value                  | Description                          |
-| :------------------ | :--------------------- | :----------------------------------- |
-| `animation-duration-fast`| `0.1s`                 | Quick transitions (hover, focus)     |
-| `animation-duration-medium`| `0.2s`                 | Standard transitions (fade, slide)   |
-| `animation-spinner-rotate`| `1s linear infinite`   | Rotation for loading spinners        |
+Token Usage Rules (Dev handoff)
+- Always reference semantic tokens (color.primary) in components.
+- Do NOT use hex literals in component styles.
+- Provide fallback tokens in dark mode mapping.
 
 ---
 
 ## 2. Component Specifications
 
-### 2.1. Input Field (`component-input-text`, `component-input-password`)
+Naming: C/<Category>/<Name>
 
-*   **Structure:** Label (`typography-label`), Input element, optional helper/error text (`typography-body-sm`).
-*   **States:**
-    *   **Default:** `background-card`, `border-input-default`, `color-text-primary`, `border-radius-sm`, `padding-md` horizontally, `padding-sm` vertically. Placeholder: `color-text-placeholder`.
-    *   **Focused:** `border-input-focused`, `shadow-sm`.
-    *   **Error:** `border-input-error`, error text `color-error-text` below the input.
-    *   **Disabled:** `background-disabled`, `color-disabled-text`, `border-input-default`. Uninteractable.
-*   **Password Input (`component-input-password` specific):** Includes an integrated icon button for toggling visibility.
-    *   Icon: `icon-visibility-off` (masked), `icon-visibility` (visible).
-    *   Size: `20px`, `color-text-secondary`.
-    *   Interaction: On click, toggles `type` attribute and icon.
+Components detail (selected)
 
-### 2.2. Button (`component-button-primary`)
+1) C/Actions/Button
+- Variants:
+  - Primary (button.primary.* tokens)
+  - Secondary
+  - Ghost
+- Sizes: Small (32px h), Medium (40px h), Large (48px h)
+- States: Default, Hover (+8% brightness), Focus (2px outline using color.primary; meets 3:1 contrast), Active (scale 0.98), Disabled (40% opacity), Loading (spinner inside)
+- Token mapping:
+  - background: button.primary.background -> color.primary
+  - text: button.primary.text -> color.surface
+- Accessibility:
+  - role="button", aria-pressed as needed, text label required, minimum 44x44 tappable area.
 
-*   **Structure:** Text (`typography-button-primary`), optional icon.
-*   **States:**
-    *   **Default:** `background-primary`, `color-button-primary-text` (white), `border-radius-md`, `padding-lg` horizontally, `padding-md` vertically. `shadow-sm`.
-    *   **Hover:** `background-primary-dark`, `shadow-md`. `animation-duration-fast`.
-    *   **Pressed:** `background-primary-dark`, slightly reduced `box-shadow` to simulate depth.
-    *   **Disabled:** `background-disabled`, `color-disabled-text`, no interactive effects.
-    *   **Loading:** `background-primary-dark`, `color-button-primary-text`, `icon-spinner` (spinning `animation-spinner-rotate`) replaces button text or is integrated. Disabled and unclickable.
+2) C/Inputs/TextField
+- Props: label, placeholder, required, helpText, errorText, iconLeading, iconTrailing
+- Sizes: Medium default; small variant for compact forms.
+- States:
+  - Default: neutral border (color.neutral.300)
+  - Focus: border color.primary and focus ring (2px)
+  - Error: border color.error; error message below, aria-describedby set
+- Password field: toggle to show/hide with accessible label.
+- Password rules: inline helper with password strength component (C/Forms/PasswordStrength).
 
-### 2.3. Link (`component-link`)
+3) C/Feedback/Banner
+- Types: Info, Success, Warning, Error
+- Placement: top of form area or global
+- Roles: role="status" (non-blocking) or role="alert" (assertive for critical)
+- Behavior: dismissable optional; includes CTA slot.
 
-*   **Structure:** Text (`typography-link`).
-*   **States:**
-    *   **Default:** `color-text-link`, `text-decoration: underline`.
-    *   **Hover:** `color-primary-dark`, slightly bolder `text-decoration`. `animation-duration-fast`.
-    *   **Focused:** Same as hover, with a distinct outline (e.g., `outline: 2px solid color-border-focused`).
-    *   **Pressed:** `color-primary-darker`.
+4) C/Content/Table
+- Columns: selectable, primary, metadata, actions
+- Desktop: horizontal table with sortable headers
+- Mobile: collapsible rows; show primary info and overflow menu for actions.
+- Accessibility: <table> semantics with <th scope="col">; keyboard row actions via menu button.
 
-### 2.4. Global Error Message (`component-alert-error`)
+5) C/Modal/Confirm
+- Always centralized overlay with focus trap, close on Esc, returns focus to trigger element.
+- Motion: fade+scale 180ms.
+- Props: title, body, confirmLabel, cancelLabel, destructive (changes button color).
 
-*   **Structure:** Container with `icon-error` and error text (`typography-body-sm`).
-*   **Appearance:** `background-error-subtle`, `border: 1px solid color-error`, `border-radius-md`, `padding-md`. Text `color-error-text`.
-*   **Placement:** Prominently at the top of the form container.
-*   **Dismissal:** Can be dismissed manually (if applicable) or on subsequent user interaction (e.g., typing in a field, attempting re-submission).
+6) C/Status/Badge
+- Variants: info, success, error, locked
+- Use for lock indicators beside usernames; include accessible label "Account locked".
 
-### 2.5. Status Indicator (`icon-spinner`)
+7) C/Feedback/Skeleton
+- Variants: skeleton.card, skeleton.row
+- Behavior: shimmer (800ms) by default; disabled when prefers-reduced-motion.
 
-*   **Usage:** Integrated into buttons for loading states.
-*   **Appearance:** Typically a circular animation. `color-button-primary-text` when in a primary button.
-*   **Animation:** `animation-spinner-rotate`.
+Component states & Variants Checklist
+- Each component must define: Type, Size, State, Icon positions per figma-design-standards.
+- Limit nested autolayout to 4 levels.
 
 ---
 
 ## 3. Brand Guidelines
 
-*   **Logo Usage:** The application logo (`brand-logo.svg`) MUST be prominently displayed on the login page, centered at the top. It should maintain its aspect ratio and have sufficient clear space around it.
-*   **Brand Colors:** `color-primary` and `color-primary-dark` are core brand colors, used for primary actions and key brand elements.
-*   **Brand Voice:** Secure, reliable, professional, and user-centric. Error messages should be helpful and not technical. Copy should be clear and concise.
+Brand Assets
+- Logo: primary and compact (stacked) variations. Provide safe area, minimum sizes, and color variants (light/dark).
+- Iconography: system of line icons, 24px baseline, stroke 2px for default; filled for status icons.
+- Illustration style: flat, minimal line illustrations for empty states; optional brand-color accents.
+- Photography: avoid people-identifiable images in auth flows; use abstract illustrations.
+
+Logo Usage
+- Primary logo on light backgrounds: use brand.500 colored logo.
+- On dark backgrounds: use white logo version with sufficient contrast.
+- Do not alter logo spacing, colors, or rotate/scaling beyond allowed min/max.
+
+Brand Voice (copy guidelines)
+- Tone: Clear, calm, helpful.
+- Error copy: Non-blaming, action-oriented. Example: "Invalid credentials. Please try again or reset your password."
+- Locked account copy: "Your account has been temporarily locked after multiple sign-in attempts. You can request a password reset or contact support."
 
 ---
 
-## 4. Accessibility Standards (WCAG Compliance Details)
+## 4. Accessibility Standards (Design-level)
 
-Our Design System components are built to meet WCAG 2.1 AA standards.
+WCAG 2.2 Level AA checklist (design expectations)
+- Contrast:
+  - Text >= 4.5:1 for normal text; large text >=3:1
+  - UI controls >=3:1 for visible distinctiveness
+- Keyboard:
+  - All interactive controls keyboard focusable; logical order in Figma annotations
+  - Skip links and focus management documented
+- Forms:
+  - Label association, placeholder not used as label, required fields marked.
+  - Error messages bound to inputs with aria-describedby notes.
+- Motion:
+  - Provide reduced-motion variant; avoid essential information conveyed only via motion.
+- Images:
+  - Decorative images: alt="" or role=presentation.
+  - Illustrations: include short alt + link to longer description if critical.
+- Testing:
+  - Annotate screens with recommended assistive tech test cases (NVDA, VoiceOver, ChromeVox).
 
-*   **Color Contrast:**
-    *   All defined `color-text-*` tokens are tested against `color-background-*` and `color-error-subtle` backgrounds to ensure 4.5:1 contrast ratio.
-    *   Interactive elements and graphical components (e.g., input borders, icons) use `color-border-default`, `color-border-focused`, `color-error`, `color-primary`, which are validated for 3:1 contrast against their respective backgrounds.
-*   **Semantic HTML:** All components use appropriate semantic HTML5 tags (e.g., `<button>`, `<input>`, `<label>`, `<a>`) to convey meaning to assistive technologies.
-*   **Keyboard Operability:**
-    *   Focus states (`border-input-focused`, button outlines) are implemented for all interactive components.
-    *   `role="button"` for custom button-like elements (e.g., password toggle icon if not a native button).
-    *   `tabindex="0"` for custom interactive elements requiring focus.
-*   **Screen Reader Support:**
-    *   `aria-label` attributes are used for icon-only buttons (e.g., "Toggle password visibility").
-    *   Input `label` elements are explicitly associated with their inputs using `for` and `id`.
-    *   Error messages on input fields utilize `aria-describedby` to link the input to its validation message, and the input itself is marked with `aria-invalid="true"` when in error state.
-    *   Global error alerts may use `role="alert"` or `aria-live="assertive"` to ensure immediate announcement to screen reader users.
+Accessibility Implementation Notes
+- Announcements:
+  - Use aria-live="polite" for non-blocking messages (info); aria-live="assertive" for blocking errors.
+- Focus order:
+  - On validation error, set focus to the first invalid field.
+  - Modal: trap focus and return focus on close.
+- Touch target sizes:
+  - Ensure 44x44px minimum tap targets on mobile.
 
 ---
 
 ## 5. Usage Guidelines and Examples
 
-*   **Input Fields:**
-    *   Always use a visible label; do not rely solely on placeholders.
-    *   Provide clear, concise error messages directly beneath the affected input field for client-side validation.
-    *   **Example (Email Input):**
-        ```html
-        <label for="email-input" class="typography-label">Email Address</label>
-        <input type="email" id="email-input" placeholder="Enter your email" class="component-input-text" />
-        <p class="typography-body-sm color-error-text">Email address is required</p>
-        ```
-*   **Buttons:**
-    *   Use `component-button-primary` for the main action on a page (e.g., "Login").
-    *   Ensure buttons have clear, descriptive text.
-    *   Never use disabled buttons without clear indication of why they are disabled (e.g., accompanying error message or helper text explaining what needs to be filled).
-*   **Error Messages:**
-    *   **Inline:** Use for field-specific validation (e.g., empty fields, invalid format). Display immediately on client-side failure.
-    *   **Global:** Use for server-side errors (e.g., invalid credentials, account locked, generic system errors). Display prominently at the top of the form.
-    *   Wording: Follow UXR-001 - clear, actionable, non-technical. Do not expose backend error codes.
-*   **Loading Indicators:**
-    *   Whenever a user action triggers a server request, the interactive element (e.g., button) should show a loading state (UXR-005). This provides feedback and prevents double submissions.
+Example: Login Form usage (mapping tokens)
+- Container: max-width token.container.1000, padding: spacing.24
+- Email TextField:
+  - label: "Email"
+  - text style: typography.body
+  - placeholder color: color.text.secondary
+  - error color: color.error
+- Submit Button:
+  - variant: C/Actions/Button.Primary, width: fill parent on mobile, size: medium
+- Banner:
+  - Use C/Feedback/Banner.Error on failed login; role="status" with aria-live.
 
-These guidelines ensure consistency, usability, and accessibility across the application, especially for critical flows like Login & Authentication.
+Example: Admin Table - Locked Accounts
+- Table columns: Checkbox | Username (primary) | Locked Since | Attempts | Actions
+- Username cell: avatar (C/Content/Avatar small), username text (typography.body.medium), email hidden on row expand (privacy considerations).
+- Actions: "View attempts" (opens SCR-008), "Unlock" (opens SCR-009 modal).
+- Pagination: prefer pagination over virtualization unless >10k rows; use virtual scroll only if validated.
+
+Form validation patterns
+- Client-side:
+  - Synchronous checks (empty, format) at input blur; prevent submit until valid.
+  - On submit: show spinner; if server returns field errors, map to inputs and show inline errors.
+- Server-side:
+  - Generic credential error mapping to form-level banner (no email existence disclosure).
+  - Locked account returns code + details to trigger Locked UI variant.
+
+Empty State Guidelines
+- Use illustration (C/Illustration/EmptyMinimal) + short explanatory copy + primary CTA.
+- Example for SCR-007 empty: "No locked accounts — great! Use filters to broaden your search."
+
+Dark Mode & High Contrast
+- Ensure all tokens have dark equivalents; test all components to maintain minimum contrast.
+- Avoid using color alone; use icons and text labels for status.
+
+Versioning & Governance
+- Token change process:
+  - All token changes require design review + accessibility sign-off.
+  - Version tokens by semantic release: v1, v2, etc. (update 01_Foundations page).
+- Component changes:
+  - If identical logic appears ≥2 times, extract into shared component per dry-principle-guidelines.
+
+Why these guidelines
+- Enforce consistent, accessible UI alignment with product security requirements and administrative workflows. Tokens and components reduce implementation mistakes and ensure compliance with acceptance criteria in the Figma spec.
 
 ---
+
+End of Design System Summary.
+
+Note: Full token files and component master frames to be created under 01_Foundations and 02_Components pages in the Figma file; include dev mapping in 06_Handoff.

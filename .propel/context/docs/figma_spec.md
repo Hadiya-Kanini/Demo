@@ -1,454 +1,414 @@
 # Figma Design Specification
 
-## 1. UI Impact Assessment
-
-The following Functional Requirements (FR) and Use Cases (UC) from the Product Specification necessitate specific UI/UX design considerations for the Login & Authentication feature:
-
-*   **FR-001: Display Login Form**
-    *   **UI Impact:** Directly dictates the need for a dedicated login page layout, including a container for inputs, buttons, and links. Requires clear visual hierarchy for all form elements.
-*   **FR-002: Email Address Input**
-    *   **UI Impact:** Design of a standard text input field. Requires visual styling for its default, focused, error, and disabled states. Needs a placeholder text.
-*   **FR-003: Password Input**
-    *   **UI Impact:** Design of a password input field with character masking. Requires a "show/hide password" toggle for usability (UXR-003) and associated iconography. Visual styling for states similar to email input.
-*   **FR-004: Client-Side Input Validation (Empty Fields)**
-    *   **UI Impact:** Design for inline error message display immediately below the respective input fields. Error messages must be visually distinct (e.g., red text, error icon). This also impacts the input field's border/background color when in an error state.
-*   **FR-005: Credential Submission**
-    *   **UI Impact:** Design of the primary "Login" button and its various interactive states: default, hover, pressed, disabled (during client-side validation failure or submission), and a loading state (e.g., spinner within the button).
-*   **FR-011: Role-Based Dashboard Redirection**
-    *   **UI Impact:** While the dashboards are out of scope, the successful login flow visually concludes with a clear transition (e.g., brief loading, then a full page redirect). This confirms the end state of the login interaction.
-*   **FR-013: Invalid Credentials Error Message**
-    *   **UI Impact:** Design for a prominent, global error message display area on the login page, typically at the top or center. This message must be visually distinct and use consistent error styling.
-*   **FR-014: Account Locked Error Message**
-    *   **UI Impact:** Similar to FR-013, requires a prominent, global error message display area with specific text and error styling.
-*   **FR-015: Generic System Error Message**
-    *   **UI Impact:** Similar to FR-013/FR-014, for displaying unexpected server errors.
-*   **FR-017: Forgot Password Redirection**
-    *   **UI Impact:** Design of a clickable "Forgot Password?" link. Requires standard link styling (e.g., underlined text) and hover/focus states.
+Platform: Responsive (Web / Mobile - iOS baseline)
 
 ---
 
-## 2. UX Requirements (UXR-XXX)
+## 1. UI Impact Assessment
+Has UI Changes: Yes
 
-Derived from the Product Specification's NFRs (especially Usability & Security) and best practices.
+Summary
+- Source: Product Specification - Authentication & Account Recovery (FR-001 .. FR-011; UC-001 .. UC-009).
+- UI Impact: High — multiple user-facing forms (Login, Forgot Password, Reset), role-based landing screens, and an Admin console to view/unlock accounts and inspect authentication events.
+- Target platforms: Web (desktop first, 1440px baseline), Mobile (iPhone 14: 390x844), Tablet (iPad: 768x1024).
+- Figma File Organization required: 6-page standard (00_Cover → 06_Handoff) per figma-design-standards.
 
-**UXR-001: Clear and Actionable Error Messages**
-*   **Description:** All error messages (client-side and server-side) shall be easily distinguishable, use simple, non-technical language, and guide the user on how to resolve the issue where applicable.
-*   **Acceptance Criteria:**
-    *   Error messages (FR-004, FR-013, FR-014, FR-015) MUST use `color-error-text` (see Design System).
-    *   Error messages MUST be presented near the relevant input field for inline errors or at a prominent global location for server errors.
-    *   Message text MUST adhere to the exact wording specified in FRs or defined in this spec.
-    *   Message text MUST be legible (minimum `font-size-body-sm` and `font-weight-regular`).
-*   **Reference:** NFR-USAB-001
+Stakeholders
+- Product Owner, Security Lead, Backend Lead, Frontend Lead, UX Researcher, Accessibility Specialist, Admin SME.
 
-**UXR-002: Intuitive Form Design**
-*   **Description:** The login form shall have clear, descriptive labels for all input fields, ensure a logical tab order, and prominently display the primary "Login" action.
-*   **Acceptance Criteria:**
-    *   Input fields MUST have persistent, visible labels (e.g., "Email Address", "Password") not just placeholders.
-    *   The tab order MUST flow logically from "Email Address" to "Password" to "Login" button to "Forgot Password?" link.
-    *   The "Login" button MUST be a primary button style, distinct from other elements.
-*   **Reference:** NFR-USAB-002
+UI Impact Rationale
+- Front-end validation, error messaging, lockout & rate-limit feedback, admin remediation UI are all explicitly required in functional requirements. All screens below are derived from Use Cases UC-001..UC-009.
 
-**UXR-003: Password Visibility Toggle**
-*   **Description:** The password input field shall include an option (e.g., an eye icon) to toggle password visibility to aid in accurate input.
-*   **Acceptance Criteria:**
-    *   An interactive icon (e.g., `icon-visibility` / `icon-visibility-off`) MUST be present within or adjacent to the password input field.
-    *   Clicking the icon MUST toggle the input type between `password` and `text`.
-    *   The icon MUST visually reflect its current state (e.g., open eye for visible, crossed-out eye for masked).
-    *   This toggle MUST be keyboard-operable.
-*   **Reference:** FR-003 (enhancement for usability)
+---
 
-**UXR-004: Immediate Client-Side Validation Feedback**
-*   **Description:** Client-side validation errors (FR-004) shall be displayed immediately and inline with the relevant input field upon attempted submission, without requiring a full page refresh.
-*   **Acceptance Criteria:**
-    *   Validation messages for empty fields MUST appear on blur or attempted form submission.
-    *   The input field itself (e.g., border color) MUST change to an error state.
-    *   The error message MUST disappear when the user starts typing valid input into the field.
-*   **Reference:** FR-004
+## 2. UX Requirements
 
-**UXR-005: Loading Indicator for Submission**
-*   **Description:** Upon clicking the "Login" button (FR-005), a clear visual indicator shall be displayed to inform the user that the request is being processed.
-*   **Acceptance Criteria:**
-    *   The "Login" button MUST change to a loading state (e.g., display `icon-spinner` and disable clicks) immediately after being clicked and before a server response.
-    *   The loading state MUST persist until a response (success or error) is received from the server.
-*   **Reference:** NFR-PERF-001 (impacts perceived performance)
+UXR Requirements Table
+| UXR-ID | Category | Requirement | Acceptance Criteria | Screens Affected |
+|--------|----------|-------------|---------------------|------------------|
+| UXR-001 | Usability | Users must complete core auth flows (Login / Forgot password / Reset) within 3 clicks/taps from entry | Test script: login, forgot-password, reset each ≤3 interactions (click/tap) to reach CTA; observed in usability test (n=5) | SCR-001, SCR-002, SCR-003 |
+| UXR-101 | Visual Design | Use design tokens for all components; no hard-coded colors | Figma file tokens populated; design audit shows 100% token usage | All screens |
+| UXR-201 | Accessibility | All screens meet WCAG 2.2 AA for text and UI contrast & keyboard support | Automated axe / manual audit passes; keyboard-only navigation completes flows; focus visible | All screens |
+| UXR-202 | Accessibility | Auth error messages must be announced via aria-live and not cause focus loss | Screen reader test: error announced; focus placed on first invalid field | SCR-001, SCR-002, SCR-003 |
+| UXR-301 | Responsiveness | Layouts responsive at Mobile/Tablet/Desktop breakpoints with defined behavior | Screens adapt per breakpoints; components use Auto Layout with fill/hug directives | All screens |
+| UXR-401 | Interaction | Submits must provide immediate feedback (spinner or skeleton) within 200ms | Prototype measurement: spinner/skeleton visible within 200ms; CTA disabled while pending | SCR-001, SCR-002, SCR-003, SCR-007 |
+| UXR-501 | Error Handling | Credential mismatch errors must be generic and not leak account existence | Copy review: message "Invalid credentials"; tests confirm no email existence clues | SCR-001 |
+| UXR-601 | Security UX | Account locked flows must present recovery options: Forgot Password & Contact Admin | Locked state shows CTAs; unlock path test completes | SCR-001 (Locked state), SCR-005 |
+| UXR-701 | Admin UX | Admin must filter and find locked accounts in ≤2 actions and unlock with confirmation | Usability test: unlock complete in ≤60s; audit entry logged | SCR-007, SCR-009, SCR-008 |
+| UXR-801 | Performance UX | Lists should use skeletons and progressive loading for >300ms loads | When API >300ms, skeleton visible; list populates without layout shift | SCR-006, SCR-007, SCR-008 |
+| UXR-901 | Internationalization | All text must be replaceable; avoid embedding text in images | All copy in text layers; no hard-coded strings in images | All screens |
 
-**UXR-006: Accessible Interactions**
-*   **Description:** All interactive elements (input fields, buttons, links) shall be fully navigable and operable using a keyboard, and provide appropriate semantic information for screen readers.
-*   **Acceptance Criteria:**
-    *   All interactive elements MUST have a visible focus state when navigated via keyboard.
-    *   Semantic HTML5 elements (e.g., `<form>`, `<input>`, `<button>`, `<a>`) MUST be used correctly.
-    *   `aria-label` or `aria-describedby` attributes MUST be used for improved screen reader context, especially for error messages.
-    *   Form elements MUST be correctly associated with their labels (e.g., using `for` and `id` attributes).
-*   **Reference:** NFR-USAB-002, WCAG Compliance (Section 9)
-
-**UXR-007: Email Format Validation (Client-side)**
-*   **Description:** The email input field shall provide immediate client-side validation for basic email format, in addition to checking for emptiness.
-*   **Acceptance Criteria:**
-    *   If the email field content does not match a standard email regex pattern (e.g., `^[^\s@]+@[^\s@]+\.[^\s@]+$`) upon blur or submission, the message "Please enter a valid email address" MUST be displayed beneath the field.
-    *   This validation MUST occur before server submission.
-*   **Reference:** Best practice for user experience.
+Notes:
+- Tagging: UXR-200+ Accessibility; UXR-300+ Responsiveness; UXR-400+ Visual Design; UXR-500+ Interaction; UXR-600+ Error Handling; UXR-700+ Admin UX; UXR-900+ i18n.
 
 ---
 
 ## 3. Persona Analysis and User Journeys
 
-**Primary Persona: End User (e.g., Customer, Admin, Employee)**
+Personas (summary)
+- Persona A: End User (Customer / Employee)
+  - Role: Primary consumer; goal: authenticate quickly and reach role-specific workspace.
+  - Key needs: Fast login, clear errors, easy recovery for locked accounts.
+  - Key screens: SCR-001, SCR-002, SCR-003, SCR-006, SCR-010.
+- Persona B: Administrator
+  - Role: Operator managing accounts and responding to alerts.
+  - Key needs: Fast search/filter, clear attempt history, safe unlock/force reset actions with audit.
+  - Key screens: SCR-007, SCR-008, SCR-009, SCR-012.
 
-*   **Archetype:** A user who needs to securely access the application to perform their role-specific tasks.
-*   **Goals:**
-    *   Quickly and easily log in to the application.
-    *   Access their personalized dashboard/features.
-    *   Receive clear feedback if login fails.
-    *   Recover access if credentials are forgotten or account is locked.
-*   **Motivations:** Efficiency, security, task completion, access to information/tools.
-*   **Pain Points (Login & Auth specific):**
-    *   Forgetting passwords.
-    *   Unclear or technical error messages.
-    *   Slow login times.
-    *   Difficulty identifying input errors.
-    *   Being locked out without clear instructions.
-    *   Security concerns about personal data.
+User Journey Examples
+- End User - Successful Login
+  1. Entry: Landing (public) -> SCR-001 (Login Default)
+  2. Submit -> SCR-001 (Loading) -> SCR-006 (Role-based Dashboard Default)
+  3. Post: optional session expiry flow -> SCR-010 (Session Expired)
+- End User - Locked Account Recovery
+  1. Attempt Login -> SCR-001 (Error Locked)
+  2. Choose "Forgot Password" -> SCR-002 -> SCR-003 (Reset) -> SCR-004 (Success)
+- Admin - Unlock Flow
+  1. Admin navigates to Admin console -> SCR-007 (Locked Accounts list)
+  2. Select account -> SCR-008 (Detail + attempts) -> open SCR-009 (Confirm Unlock) -> action logged
 
-**Key User Journey: Login to the Application**
-
-1.  **Entry Point:** User navigates to the application URL (e.g., from a bookmark, email link, or after session expiry).
-    *   **Emotional State:** Intentional, sometimes frustrated if it's due to a timeout.
-    *   **Design Consideration:** The login page must be immediately recognizable and inviting.
-2.  **Input Credentials:** User sees the login form and enters their email address and password.
-    *   **Emotional State:** Focused, expecting a smooth process.
-    *   **Design Consideration:** Fields must be clearly labeled, input masking for password, optional password visibility toggle (UXR-003).
-3.  **Attempt Login:** User clicks the "Login" button.
-    *   **Emotional State:** Hopeful, expecting access.
-    *   **Design Consideration:** Clear button styling (UXR-002), visual feedback on click and loading (UXR-005).
-
-4.  **System Feedback & Resolution (Happy Path - UC-001):**
-    *   System validates credentials.
-    *   User sees a brief loading state.
-    *   User is redirected to their role-specific dashboard.
-    *   **Emotional State:** Satisfied, ready to work.
-    *   **Design Consideration:** Fast redirection (NFR-PERF-001).
-
-5.  **System Feedback & Resolution (Unsuccessful Path - Client-Side Validation - UC-003):**
-    *   User clicks "Login" with empty fields.
-    *   System immediately displays inline validation messages.
-    *   **Emotional State:** Mild annoyance, but quickly corrected.
-    *   **Design Consideration:** Instant, clear, inline error messages (UXR-004, UXR-001). Input fields highlight the error.
-
-6.  **System Feedback & Resolution (Unsuccessful Path - Invalid Credentials - UC-002):**
-    *   User clicks "Login" with incorrect credentials.
-    *   System displays a global "Invalid credentials" error message.
-    *   User may try again, or click "Forgot Password?".
-    *   **Emotional State:** Frustration, confusion.
-    *   **Design Consideration:** Clear, prominent global error message (FR-013, UXR-001). "Forgot Password?" link is easily discoverable (FR-017).
-
-7.  **System Feedback & Resolution (Unsuccessful Path - Locked Account - UC-004):**
-    *   User clicks "Login" with a locked account.
-    *   System displays a global "Account is locked" error message.
-    *   User may seek help or wait.
-    *   **Emotional State:** Higher frustration, feeling helpless.
-    *   **Design Consideration:** Specific, prominent global error message (FR-014, UXR-001) that might include guidance (e.g., "Please contact support or try again in 30 minutes").
+Mapping persona to screens included in Screen Inventory.
 
 ---
 
-## 4. Screen Inventory
+## 4. Information Architecture & Screen Inventory
 
-Derived directly from the Use Case Analysis, focusing on screens requiring UI design within this specification.
+Site Map (top-level)
+[Auth Area]
++-- Login (SCR-001)
++-- Forgot Password (SCR-002)
++-- Reset Password (SCR-003)
++-- Reset Confirmation (SCR-004)
++-- Locked Info (SCR-005)
++-- Role Dashboards (SCR-006)
+[Admin Area]
++-- Locked Accounts List (SCR-007)
++-- Account Detail / Attempts (SCR-008)
++-- Unlock Confirm (SCR-009)
++-- Session Expired Prompt (SCR-010)
++-- Rate Limit / Too Many Requests (SCR-011)
++-- Suspicious Activity Queue (SCR-012)
 
-1.  **Login Page:** (Primary focus of this spec)
-    *   This is the initial entry point for all users requiring authentication.
-    *   It encompasses all input, validation, loading, and error states related to the login process.
-    *   **Derived from:** FR-001, FR-002, FR-003, FR-004, FR-005, FR-013, FR-014, FR-015, FR-017, UC-001, UC-002, UC-003, UC-004, UC-005.
+Screen List (derived from Use Cases)
+| Screen ID | Name | Derived From | Personas | Priority | States |
+|-----------|------|--------------|----------|----------|--------|
+| SCR-001 | Login Screen | UC-001, UC-002, UC-003, UC-004 | End User | P0 | Default, Loading, Empty, Error, Validation |
+| SCR-002 | Forgot Password Request | UC-005 | End User | P0 | Default, Loading, Empty, Error, Validation |
+| SCR-003 | Reset Password Form | UC-006 | End User | P0 | Default, Loading, Empty, Error, Validation |
+| SCR-004 | Reset Success Confirmation | UC-006 | End User | P1 | Default, Loading, Empty, Error, Validation |
+| SCR-005 | Account Locked Info (variant of Login) | UC-004 | End User | P0 | Default, Loading, Empty, Error, Validation |
+| SCR-006 | Role-based Dashboard (scaffold) | FR-003 | End User (roles) | P0 | Default, Loading, Empty, Error, Validation |
+| SCR-007 | Admin - Locked Accounts List | FR-009, UC-007 | Admin | P0 | Default, Loading, Empty, Error, Validation |
+| SCR-008 | Admin - Account Detail & Attempts | FR-009, FR-008 | Admin | P0 | Default, Loading, Empty, Error, Validation |
+| SCR-009 | Admin - Unlock / Force Reset Modal | UC-007 | Admin | P0 | Default, Loading, Empty, Error, Validation |
+| SCR-010 | Session Expired / Token Refresh Prompt | UC-008 | End User | P1 | Default, Loading, Empty, Error, Validation |
+| SCR-011 | Rate Limit Banner / Guidance | FR-010 | All | P1 | Default, Loading, Empty, Error, Validation |
+| SCR-012 | Admin - Suspicious Activity Queue | FR-011 (optional) | Admin | P1 | Default, Loading, Empty, Error, Validation |
 
-2.  **Dashboard Pages (Customer, Admin, Employee):** (Target screens, design out of scope for *this* spec)
-    *   These pages represent the successful destination after authentication (FR-011).
-    *   They define the successful end-state of the login flow, but their internal design is assumed to be handled separately.
-
-3.  **Forgot Password Page:** (Target screen, design out of scope for *this* spec)
-    *   This is the destination when a user clicks the "Forgot Password?" link (FR-017, UC-005).
-    *   Its design and functionality are assumed to be an existing or separately defined feature.
-
-**Focus of this document:** The **Login Page** and its various states.
+Notes:
+- SCR-005 is implemented as a Login variant/modal when server returns locked status, not a completely separate page unless admin/UX decides otherwise.
+- All screens must include header landmark, main, and footer landmarks for accessibility.
 
 ---
 
-## 5. Screen Specifications: Login Page
+## 5. Screen Specifications (each with 5 states)
 
-### 5.1. Login Page - Default State
+Design conventions for all screens:
+- Default desktop width: 1040px content container centered on 1440px canvas.
+- Mobile viewport: 390x844; touch targets min 44x44px.
+- All frames must use Auto Layout; nested auto-layout no deeper than 4 levels.
+- Spacing tokens: 8px base; use multiples: 8,12,16,20,24,32,40.
+- Typography tokens from Design System (see designsystem.md).
+- State naming: <ScreenName>/<State> (e.g., Login/Default).
 
-*   **Description:** The initial state of the login page before any user interaction or submission.
-*   **Elements:**
-    *   **Application Logo:** Prominently displayed at the top, centered (e.g., `brand-logo.svg`).
-    *   **Header:** "Welcome Back" (H1, `typography-heading-h1`).
-    *   **Subheader:** "Sign in to your account" (Body, `typography-body-lg`).
-    *   **Email Address Input Field:**
-        *   Label: "Email Address" (`typography-label`).
-        *   Placeholder: "Enter your email" (`color-text-placeholder`).
-        *   Initial state: Empty, default border (`border-input-default`).
-    *   **Password Input Field:**
-        *   Label: "Password" (`typography-label`).
-        *   Placeholder: "Enter your password" (`color-text-placeholder`).
-        *   Initial state: Empty, masked characters, default border (`border-input-default`).
-        *   Icon: Password visibility toggle (`icon-visibility-off`).
-    *   **Login Button:**
-        *   Text: "Login" (`typography-button-primary`).
-        *   Style: Primary button (`component-button-primary`).
-        *   State: Active, clickable.
-    *   **Forgot Password? Link:**
-        *   Text: "Forgot Password?" (`typography-link`).
-        *   Style: Underlined link (`component-link`).
-        *   Alignment: Typically right-aligned or centered below the password field.
+SCR-001 — Login Screen
+- Purpose: Primary credential entry point.
+- Elements: Header (logo, skip link), Form (Email, Password, Remember me checkbox), Primary CTA (Login - C/Actions/Button/Primary), Secondary Link (Forgot password), Error/Info banner area, Footer help links.
+- Behavior: Enter submits; Enter key triggers Login; accessible labels for inputs.
+- States:
+  - Default: Pre-filled placeholder examples (email placeholder), CTA enabled. Focus order: email -> password -> remember -> login -> forgot.
+    - Acceptance: Focus visible on first interactable; fields have clear labels.
+  - Loading: CTA disabled, inline spinner within CTA, fields disabled, aria-busy on form container. Show skeleton of banner space preserved.
+    - Acceptance: Spinner appears <200ms; button disabled.
+  - Empty: Minimal help text shown when no saved accounts detected; optional "Create account" CTA if available (out-of-scope).
+    - Acceptance: Layout preserved; no shift on load.
+  - Error: Generic error banner "Invalid credentials" surfaced; variant for Locked shows "Account is locked" with CTAs: "Forgot password" and "Contact support". Banners are role-neutral and use aria-live="polite".
+    - Acceptance: Screen reader reads the error; message does not indicate email existence.
+  - Validation: Inline field errors for required/format (e.g., "Please enter a valid email"). Inputs get error border (token color.error), error text with aria-describedby, first invalid field receives focus.
+    - Acceptance: Field-level error announced; client prevents submit.
 
-### 5.2. Login Page - Loading State
+SCR-002 — Forgot Password Request
+- Elements: Email input, Submit CTA ("Send reset link"), info copy about rate limit, Retry-After area.
+- States: Default (form), Loading (sending), Empty (no input helper), Error (429 rate-limit or delivery failure with Retry-After), Validation (invalid email).
+- Acceptance: On success show confirmation screen (SCR-004 style) or inline confirmation message; retry guidance when header Retry-After present.
 
-*   **Description:** The state immediately after the "Login" button is clicked and credentials are being submitted to the server.
-*   **Elements:**
-    *   **Login Button:**
-        *   Text: "Logging in..." (or visually replaced by spinner).
-        *   State: Disabled (`component-button-disabled`).
-        *   Visual: Integrated spinner icon (`icon-spinner`) replaces button text or appears within the button, indicating ongoing process.
-    *   **Other Form Elements:** Email and Password input fields, and "Forgot Password?" link are disabled (`component-input-disabled`, `component-link-disabled`) to prevent further interaction during submission.
-    *   **Global Message Area:** Empty.
+SCR-003 — Reset Password Form
+- Elements: Password, Confirm Password, password-strength/requirements helper, CTA Submit.
+- States:
+  - Default: Shows criteria (length, character classes).
+  - Loading: CTA disabled, spinner, show progress.
+  - Empty: Token missing / malformed -> show "Invalid link" state with CTA to request new.
+  - Error: Token expired -> show "Reset token expired" with "Request new link" CTA.
+  - Validation: Invalid password inline errors, strength meter updates; aria-live for policy violations.
+- Acceptance: On success, existing sessions invalidated (backend); UI shows success state.
 
-### 5.3. Login Page - Empty State
+SCR-004 — Reset Success Confirmation
+- Elements: Success message, CTA to Login, note about session invalidation.
+- States: Default (confirmation), Loading (n/a), Empty/Error/Validation present where relevant (e.g., account missing).
+- Acceptance: Clear next-step CTA.
 
-*   **Description:** This state is not applicable in the traditional sense, as it refers to a lack of data. For a login page, "empty" fields are handled by client-side validation, which falls under the "Validation State."
+SCR-005 — Account Locked Info (Login Variant)
+- Elements: Banner with locked message, unlock options, time remaining if available, "Contact Support" link.
+- States: Default (locked message), Loading (sending unlock email), Empty (no recovery options), Error (email sending failure), Validation (invalid contact input if inline form present).
+- Acceptance: Contains options to recover; no private data displayed.
 
-### 5.4. Login Page - Error States (Server-Side)
+SCR-006 — Role-based Dashboard (scaffold)
+- Elements: Header, sidebar or top nav, main content placeholder. Landing payload per role.
+- States: Default (loaded content), Loading (skeleton content), Empty (no data cards), Error (fetch failed), Validation (n/a).
+- Acceptance: Redirect after login lands here; role-specific permissions enforced.
 
-*   **Description:** States reflecting server-side authentication failures. These typically display a global error message.
-*   **Common Elements:**
-    *   **Global Error Message Area:** Located prominently (e.g., at the top of the form, below the subheader).
-        *   Style: `component-alert-error`, `color-error-text`, `background-error-subtle`.
-        *   Icon: `icon-error`.
-    *   **Input Fields:** Return to default state, allowing user to correct input.
-    *   **Login Button:** Returns to default active state.
+SCR-007 — Admin - Locked Accounts List
+- Elements: Search, filters (time window, role), paginated/sortable table or list, bulk actions, badges for lock count.
+- States: Default (rows), Loading (skeleton rows), Empty (no locked accounts), Error (permission or server error), Validation (search input).
+- Acceptance: Rows show last_failed_at, attempts_count, last_ip (masked), actions menu.
 
-#### 5.4.1. Error State: Invalid Credentials (UC-002, FR-013)
+SCR-008 — Admin - Account Detail & Attempts
+- Elements: Account header, recent attempts list (timestamp, IP, user-agent, outcome), metadata, unlock/force-reset action.
+- States: Default, Loading (skeleton), Empty (no attempts), Error, Validation.
+- Acceptance: Attempts list shows up to configured N entries; PII minimized (IP masked partial).
 
-*   **Global Error Message:** "Invalid credentials"
+SCR-009 — Admin - Unlock / Force Reset Modal
+- Elements: Modal title, confirm copy, input (optional reason), Confirm & Cancel buttons.
+- States: Default (confirm), Loading (processing), Empty (n/a), Error (failure), Validation (required confirmation).
+- Acceptance: Action requires one-step confirmation; action logged with admin id.
 
-#### 5.4.2. Error State: Account Locked (UC-004, FR-014)
+SCR-010 — Session Expired / Token Refresh Prompt
+- Elements: Inline banner or modal, CTA to refresh or re-login, optional silent-refresh attempt.
+- States: Default (prompt), Loading (refresh in progress), Empty, Error (refresh failed), Validation.
+- Acceptance: If refresh fails, redirect to SCR-001.
 
-*   **Global Error Message:** "Account is locked. Please try again in 30 minutes or contact support." (Adding actionability for user).
+SCR-011 — Rate Limit / Too Many Requests Banner
+- Elements: Banner with Retry-After guidance, suggested back-off and contact support link.
+- States: Default, Loading (n/a), Empty, Error, Validation.
+- Acceptance: Banner shows Retry-After header if provided.
 
-#### 5.4.3. Error State: Generic System Error (FR-015)
+SCR-012 — Admin - Suspicious Activity Queue
+- Elements: Alert list, triage actions (Acknowledge, Investigate), link to account detail.
+- States: Default, Loading, Empty (no alerts), Error, Validation.
+- Acceptance: Alerts contain sufficient context for triage; action logging required.
 
-*   **Global Error Message:** "An unexpected error occurred. Please try again later."
-
-### 5.5. Login Page - Validation State (Client-Side)
-
-*   **Description:** States reflecting immediate client-side validation failures before server submission.
-*   **Common Elements:**
-    *   **Global Message Area:** Empty (no server errors yet).
-    *   **Login Button:** Disabled (`component-button-disabled`) if validation fails.
-
-#### 5.5.1. Validation State: Email Address Required (UC-003, FR-004)
-
-*   **Email Address Input Field:**
-    *   State: Error (`component-input-error`).
-    *   Error Message: "Email address is required" (`color-error-text`, `typography-body-sm`) displayed immediately below the field.
-*   **Password Input Field:** Default state (unless also empty).
-
-#### 5.5.2. Validation State: Password Required (UC-003, FR-004)
-
-*   **Password Input Field:**
-    *   State: Error (`component-input-error`).
-    *   Error Message: "Password is required" (`color-error-text`, `typography-body-sm`) displayed immediately below the field.
-*   **Email Address Input Field:** Default state (unless also empty).
-
-#### 5.5.3. Validation State: Invalid Email Format (UXR-007)
-
-*   **Email Address Input Field:**
-    *   State: Error (`component-input-error`).
-    *   Error Message: "Please enter a valid email address" (`color-error-text`, `typography-body-sm`) displayed immediately below the field.
+Design Tokens referenced in above screens live in designsystem.md; all screen styles must map to tokens via token keys (e.g., color.error, typography.body.medium).
 
 ---
 
 ## 6. User Flows and Navigation
 
-### 6.1. Main Flow: Successful Login (UC-001)
+Flow: FL-001 — Login Success (derived UC-001)
+1. SCR-001/Default -> user submits -> SCR-001/Loading
+2. Server returns success -> app redirects to SCR-006/Default based on role.
+3. Metrics: login_success event logged; UI shows spinner until redirect.
 
-```mermaid
-graph TD
-    A[User lands on Login Page] --> B{Form Displayed: Email, Password, Login Btn, Forgot Password link};
-    B --> C[User enters Email];
-    C --> D[User enters Password];
-    D --> E[User clicks Login Button];
-    E --> F{Client-side validation: OK?};
-    F -- Yes --> G[Login Button -> Loading State (UXR-005)];
-    G --> H[Credentials submitted to server (FR-005)];
-    H --> I{Server validates credentials (FR-006, FR-008, FR-009, FR-010): OK?};
-    I -- Yes --> J[Redirect to Role-based Dashboard (FR-011)];
-    J --> K[User on Dashboard];
-```
+Flow: FL-002 — Login Invalid / Lockout (UC-002 / UC-004)
+1. SCR-001/Default -> submit -> SCR-001/Loading
+2. Server returns 401 -> SCR-001/Error ("Invalid credentials")
+3. After threshold reached -> SCR-001/Error ("Account is locked") with unlock CTAs -> user chooses Forgot -> SCR-002.
 
-### 6.2. Alternate Flow: Invalid Credentials (UC-002)
+Flow: FL-003 — Forgot Password & Reset (UC-005 / UC-006)
+1. SCR-001 -> "Forgot password" -> SCR-002/Default -> submit -> SCR-002/Loading
+2. On success -> confirmation inline or SCR-004 -> email link -> SCR-003/Default with token
+3. Submit new password -> SCR-003/Loading -> SCR-004/Default on success.
 
-```mermaid
-graph TD
-    A[User lands on Login Page] --> B{Form Displayed};
-    B --> C[User enters Email];
-    C --> D[User enters Incorrect Password];
-    D --> E[User clicks Login Button];
-    E --> F{Client-side validation: OK?};
-    F -- Yes --> G[Login Button -> Loading State (UXR-005)];
-    G --> H[Credentials submitted to server];
-    H --> I{Server validates credentials: Fails (FR-006)};
-    I --> J[Increment failed attempt counter (FR-007)];
-    J --> K[Login Button -> Default State];
-    K --> L[Display Global Error: "Invalid credentials" (FR-013)];
-    L --> M[User on Login Page (tries again or "Forgot Password")];
-```
+Flow: FL-004 — Admin Unlock (UC-007)
+1. Admin -> SCR-007/Default -> select account -> SCR-008/Default -> open SCR-009 -> confirm -> SCR-009/Loading -> success toast -> SCR-007 refresh.
 
-### 6.3. Alternate Flow: Empty Fields (UC-003)
+Flow: FL-005 — Token Expiry (UC-008)
+1. SCR-006 receives 401 -> SCR-010/Default prompt -> attempt silent refresh (if implemented) -> success redirect or fall back to SCR-001.
 
-```mermaid
-graph TD
-    A[User lands on Login Page] --> B{Form Displayed};
-    B --> C[User leaves Email/Password field(s) empty];
-    C --> D[User clicks Login Button];
-    D --> E{Client-side validation: Fails (FR-004, UXR-004)};
-    E --> F[Input field(s) highlight error];
-    F --> G[Display inline error message(s): "Email address is required", "Password is required"];
-    G --> H[Login Button -> Default/Disabled state];
-    H --> I[User on Login Page (corrects input)];
-```
+Prototype interactions to include:
+- Validation flow (FL-002 & FL-003)
+- Empty state flow (SCR-007 empty to create help task)
+- Error retry flow (SCR-002 429 -> retry after visible -> retry success)
 
-### 6.4. Alternate Flow: Account Locked (UC-004)
-
-```mermaid
-graph TD
-    A[User lands on Login Page] --> B{Form Displayed};
-    B --> C[User enters Email/Password];
-    C --> D[User clicks Login Button];
-    D --> E{Client-side validation: OK?};
-    E -- Yes --> F[Login Button -> Loading State (UXR-005)];
-    F --> G[Credentials submitted to server];
-    G --> H{Server checks account status: Locked (FR-008)};
-    H --> I[Login Button -> Default State];
-    I --> J[Display Global Error: "Account is locked" (FR-014)];
-    J --> K[User on Login Page (waits or contacts support)];
-```
-
-### 6.5. Alternate Flow: Initiate Forgot Password (UC-005)
-
-```mermaid
-graph TD
-    A[User lands on Login Page] --> B{Form Displayed};
-    B --> C[User clicks "Forgot Password?" link (FR-017)];
-    C --> D[Redirect to /forgot-password URL];
-    D --> E[User on Forgot Password Page];
-```
+Navigation Patterns
+- Web: Top header with contextual "Help" / "Contact support"; primary nav in admin is left sidebar; auth area minimal header.
+- Mobile: Minimal header; "Back" navigation accessible; bottom sheet used for admin actions if screen constrained.
 
 ---
 
-## 7. Component Mapping
+## 7. Component Mapping (C/<Category>/<Name>)
 
-This section maps the UI elements on the Login Page to generic components within the Design System (to be defined in `designsystem.md`).
+All components must follow naming convention and live under 02_Components in Figma file.
 
-*   **Application Logo:** `component-logo`
-*   **Header (Welcome Back):** `typography-heading-h1`
-*   **Subheader (Sign in...):** `typography-body-lg`
-*   **Email Address Input Field:** `component-input-text`
-    *   Labels: `typography-label`
-    *   Placeholders: `color-text-placeholder`
-    *   Error state: `component-input-error`, `color-error-text`
-*   **Password Input Field:** `component-input-password`
-    *   Labels: `typography-label`
-    *   Placeholders: `color-text-placeholder`
-    *   Password Visibility Toggle: `component-icon-button` with `icon-visibility` / `icon-visibility-off`
-    *   Error state: `component-input-error`, `color-error-text`
-*   **Login Button:** `component-button-primary`
-    *   Loading state: `component-button-primary-loading` (includes `icon-spinner`)
-    *   Disabled state: `component-button-disabled`
-*   **Forgot Password? Link:** `component-link`
-*   **Global Error Message Display:** `component-alert-error`
-    *   Includes `icon-error`
-    *   Text: `typography-body-sm`, `color-error-text`
-*   **Inline Validation Messages:** `typography-body-sm`, `color-error-text`
+Core components required
+- C/Actions/Button — Variants: Primary / Secondary / Ghost / Tertiary; Sizes: S/M/L; States: Default/Hover/Focus/Active/Disabled/Loading. Used on SCR-001..SCR-009.
+- C/Inputs/TextField — Variants: Email, Password (masked), Search; States: Default/Focus/Error/Disabled/ReadOnly. Includes helper text slot and icon leading/trailing.
+- C/Forms/Checkbox — Small checkbox with label and error state.
+- C/Feedback/Banner — Info / Error / Success / Warning with CTA slot; accessible role and aria-live variants.
+- C/Feedback/SkeletonRow — Table/row skeleton for lists.
+- C/Layouts/Container — Content container with responsive behaviors (max-width tokens).
+- C/Navigation/Header — Public header with skip link.
+- C/Navigation/Sidebar — Admin nav with active state and keyboard focus handling.
+- C/Content/Table — Rows with actions column; responsive collapse to list on mobile.
+- C/Modal/Confirm — Centered modal with confirm/cancel.
+- C/Status/Badge — Lock badge, error badge, count badge.
+- C/Forms/PasswordStrength — Strength meter with accessible text alternative.
+- C/Toast/Notification — Top/bottom anchored messages for success/error; aria-live polite.
 
----
-
-## 8. Interaction Patterns and Micro-animations
-
-*   **Input Field Focus:**
-    *   **Interaction:** User clicks or tabs into an input field.
-    *   **Animation:** Input field border changes from `border-input-default` to `border-input-focused` (e.g., thicker, accent color) with a `animation-duration-fast` transition. Placeholder text may recede or a floating label appears (if applicable to the chosen input style).
-*   **Button Hover/Pressed:**
-    *   **Interaction:** User hovers over the "Login" button, then clicks.
-    *   **Animation:**
-        *   **Hover:** Button background color subtly darkens or lightens (`background-primary-hover`) with `animation-duration-fast`.
-        *   **Pressed:** Button slightly depresses or changes background more prominently (`background-primary-pressed`).
-*   **Password Visibility Toggle:**
-    *   **Interaction:** User clicks the eye icon in the password field.
-    *   **Animation:** The icon instantly switches between `icon-visibility` and `icon-visibility-off`. No complex animation beyond state change.
-*   **Login Button Loading State:**
-    *   **Interaction:** User clicks "Login".
-    *   **Animation:** Button text fades out (`animation-duration-fast`), and `icon-spinner` fades in and rotates continuously (`animation-spinner-rotate`). Button becomes unclickable.
-*   **Error Message Appearance:**
-    *   **Interaction:** Validation fails (client-side) or server returns error.
-    *   **Animation:** Error messages (inline or global) should appear without jarring movement. A subtle slide-down or fade-in (`animation-duration-medium`) can be used, but prioritize immediate visibility.
+Component Usage Notes
+- Buttons must map to token: button.primary.background, button.primary.text, etc.
+- Text fields must expose props: label, placeholder, helpText, errorText, required, aria-describedby id.
+- All components to provide focus state with min 3:1 contrast relative to background.
 
 ---
 
-## 9. Accessibility Requirements (WCAG Compliance)
+## 8. Interaction Patterns & Micro-animations
 
-Adherence to WCAG 2.1 AA standards for the Login Page.
+Interaction Principles
+- Keep micro-interactions short: 150ms for hover/press, 200-300ms for enter/exit transitions.
+- Feedback latency: first visual response within 200ms (spinner, skeleton).
+- Motion respects prefers-reduced-motion.
 
-*   **Perceivable:**
-    *   **Color Contrast (WCAG 1.4.3):** All text (labels, placeholders, button text, error messages) and interactive elements MUST meet a minimum contrast ratio of 4.5:1 against their background. This includes `color-primary-text` on `background-page`, `color-error-text` on `background-error-subtle`, `color-button-primary-text` on `background-primary`, etc.
-    *   **Non-Text Contrast (WCAG 1.4.11):** Visual presentation of UI components (e.g., input borders, password toggle icon) and graphical objects MUST have a contrast ratio of at least 3:1 against adjacent colors.
-    *   **Resizable Text (WCAG 1.4.4):** Users MUST be able to resize text up to 200% without loss of content or functionality, without requiring assistive technology.
-    *   **Reflow (WCAG 1.4.10):** Content MUST reflow vertically on small screens without requiring horizontal scrolling at 320 CSS pixels width.
-*   **Operable:**
-    *   **Keyboard Navigation (WCAG 2.1.1):** All interactive elements (inputs, buttons, links) MUST be operable via keyboard alone. Tab order MUST be logical (UXR-002).
-    *   **Focus Indication (WCAG 2.4.7):** All interactive elements MUST have a clear and visible focus indicator when navigated via keyboard. This visual change MUST meet non-text contrast requirements (WCAG 1.4.11).
-    *   **No Keyboard Trap (WCAG 2.1.2):** Users MUST be able to move focus away from any interactive element using standard keyboard navigation.
-*   **Understandable:**
-    *   **Labels and Instructions (WCAG 3.3.2):** Form elements MUST have clear and descriptive labels (e.g., `label` tags linked with `for` and `id` attributes for inputs). Instructions for input (e.g., error messages) MUST be provided when content is required (FR-004) or specific formatting is needed (UXR-007).
-    *   **Error Identification (WCAG 3.3.1):** Input errors MUST be clearly identified to the user.
-    *   **Error Suggestion (WCAG 3.3.3):** For input errors that are automatically detected, suggestions for correction MUST be provided (e.g., "Please enter a valid email address").
-    *   **Consistent Navigation (WCAG 3.2.3):** The "Forgot Password?" link position and styling should be consistent if it appears on other pages.
-*   **Robust:**
-    *   **Parsing (WCAG 4.1.1):** HTML MUST be well-formed, valid, and free of major syntax errors.
-    *   **Name, Role, Value (WCAG 4.1.2):** All UI components MUST have a programmatic `name`, `role`, and `value` so assistive technologies can interpret them. This includes:
-        *   `type="email"` for email input.
-        *   `type="password"` for password input.
-        *   `aria-label` or `aria-labelledby` for the password visibility toggle.
-        *   `aria-live="assertive"` for dynamic error messages to announce changes to screen readers.
-        *   `aria-invalid="true"` attribute on input fields in an error state.
+Micro-animations
+- Button Press: subtle scale to 0.98 over 120ms, ease-out.
+- Banner appear/disappear: slide down + fade 200ms, easing ease-out.
+- Modal open/close: fade + scale (0.96 → 1) over 180ms.
+- Skeleton shimmer: slow linear gradient 800ms loop, respects reduced motion.
+- Password strength updates: width animation 150ms, color transition 150ms.
+
+Interaction Edge Rules
+- Loading states preserve layout to avoid content shift.
+- For long operations (>3s) show progress or secondary message.
+- All animated state transitions must be documented per component variant.
 
 ---
 
-## 10. Responsive Design Breakpoints
+## 9. Accessibility Requirements (WCAG & Implementations)
 
-The Login Page design must be responsive and adapt gracefully to various screen sizes.
+Target: WCAG 2.2 Level AA (per web-accessibility-standards) for all UI screens.
 
-*   **Extra Small (Mobile Portrait - < 576px):**
-    *   **Layout:** Single-column layout. Form elements stack vertically.
-    *   **Typography:** `font-size-body-sm` for labels/errors, `font-size-body-md` for input text, `font-size-heading-h2` for main header.
-    *   **Spacing:** Reduced `spacing-md` between elements, `spacing-lg` for overall padding.
-    *   **Form:** Input fields take 100% width. Button takes 100% width.
-*   **Small (Mobile Landscape / Tablet Portrait - 576px - 768px):**
-    *   **Layout:** Still primarily single-column, but with wider maximum content width for better readability.
-    *   **Typography:** May slightly increase font sizes where appropriate, but generally consistent with mobile.
-    *   **Spacing:** `spacing-lg` between elements, `spacing-xl` for padding.
-    *   **Form:** Max width for the form container (e.g., 400px - 500px), centered.
-*   **Medium (Tablet Landscape / Small Desktop - 768px - 992px):**
-    *   **Layout:** Centered form with moderate max-width (e.g., 450px - 550px).
-    *   **Typography:** `font-size-body-md` for labels/errors, `font-size-body-lg` for input text, `font-size-heading-h1` for main header.
-    *   **Spacing:** `spacing-xl` between elements, `spacing-xxl` for padding.
-*   **Large (Desktop - > 992px):**
-    *   **Layout:** Centered form, potentially with more surrounding white space. Max-width for the form container (e.g., 500px - 600px).
-    *   **Typography:** Standard desktop sizes as defined in Design System.
-    *   **Spacing:** Ample use of `spacing-xxl` and `spacing-3xl` for a spacious feel.
+Design-time checks (must be annotated in Figma)
+- Color contrast:
+  - Body text: >= 4.5:1
+  - Large text: >= 3:1
+  - UI components (controls, icons): >= 3:1 for visual distinction
+- Focus:
+  - Visible focus indicator for every interactive element (min 2px outline, >=3:1 contrast).
+  - Focus order follows DOM reading order; annotate focus order on screens.
+- Keyboard:
+  - All interactive elements reachable by keyboard; modal traps must be closable with Esc.
+  - Skip-to-main link present on all pages.
+- Screen reader:
+  - Error/success banners: role="status" or aria-live="polite" for non-blocking; aria-live="assertive" for blocking errors.
+  - Inputs: label elements bound programmatically; error messages referenced by aria-describedby.
+- Forms:
+  - Required fields use aria-required and visible hint.
+  - Inline validation: announce via aria-live and set focus to first error.
+- Images:
+  - Illustrations have alt text or role="img" with aria-label.
+- Touch targets:
+  - Minimum 44x44px tappable area on mobile for all CTAs.
+- No information by color alone:
+  - Use icons, text, or badges for status (locked/unlocked).
 
-The login form itself should generally remain a single column for simplicity and consistency, regardless of breakpoint, with its containing element adapting width.
+Accessibility Annotations Required in Figma
+- Focus order on each screen frame
+- ARIA label suggestions for custom components
+- Landmark annotations (<header>, <main>, <nav>, <footer>)
+- Error behavior notes and screen reader text
+- High contrast / dark mode variant checks
 
 ---
 
-### Conclusion
+## 10. Responsive Design Breakpoints & Behavior
 
-This Figma Design Specification provides a comprehensive blueprint for designing the Login Page, covering its various states, interactions, accessibility considerations, and responsive behavior. By adhering to these guidelines, the design team will create an intuitive, secure, and user-friendly login experience that aligns with the product's objectives and technical requirements. All components and styling references are to be sourced from the accompanying Design System specification.
+Breakpoints
+- Mobile: 375-420px (iPhone 14 baseline 390px)
+- Tablet: 768px
+- Desktop: 1024px and up; design baseline 1440px canvas with 1040px content width
+
+Behavior rules
+- Navigation:
+  - Desktop: Admin sidebar persistent (C/Navigation/Sidebar) + top header.
+  - Tablet: collapsed sidebar or top tab nav.
+  - Mobile: sidebar collapses into menu; admin actions exposed via bottom sheet or secondary modal.
+- Tables:
+  - Desktop: full table.
+  - Tablet: responsive table with horizontal scroll OR row expansion.
+  - Mobile: collapsed list with primary info and contextual actions in overflow menu.
+- Forms:
+  - Inputs stack vertically on mobile; use full width.
+  - Buttons: primary CTA full-width on mobile for single primary action.
+- Components resizing:
+  - Use Auto Layout Fill for content areas and Hug for content-driven sizes; document each component's resize behavior.
 
 ---
+
+## 11. Export & Naming Conventions
+
+Per figma-design-standards:
+- Export filenames: <AppName>__<Platform>__<ScreenName>__<State>__v<Version>.jpg
+- Example: AuthApp__Mobile__Login__Default__v1.jpg
+- JPG settings: Quality 85%, scale 2x for mobile, sRGB.
+
+Export Manifest to be generated in 06_Handoff page listing all screens and states.
+
+---
+
+## 12. Handoff Notes (06_Handoff)
+
+Developer Notes to include:
+- Token usage map (token key -> design intent)
+- Component props mapping (Button.primary -> buttonPrimary in code)
+- Responsive behavior and breakpoints
+- Accessibility mapping: aria- attributes suggestions and focus order
+- API contract pointers: POST /login, POST /forgot-password, POST /reset-password, GET /admin/login-attempts
+- Edge cases: token expiration copy, rate-limit messages, account locked copy
+
+Quality Checklist before export:
+- [ ] All screens include Default/Loading/Empty/Error/Validation frames
+- [ ] No hard-coded colors/text inside images
+- [ ] Focus and ARIA annotations present
+- [ ] Export manifest complete
+
+---
+
+## 13. Prototype Standards & Required Flows
+
+Prototype must demonstrate:
+- Login success and failure flow including Validation (FL-001, FL-002)
+- Forgot Password -> Reset -> Success flow (FL-003)
+- Admin unlock flow (FL-004)
+- Error retry flow for rate-limited action (FL-005)
+- Include reduced-motion toggles in prototype
+
+Prototype interactions:
+- Input validation and aria-live announcements
+- Banner error flows with retry
+- Modal confirm unlock flow with audit confirmation
+
+---
+
+## 14. Appendix: Screen-to-Persona Matrix (summary)
+| Screen | End User | Admin |
+|--------|----------|-------|
+| SCR-001 Login | Primary | Secondary (admin logs in here) |
+| SCR-002 Forgot Password | Primary | - |
+| SCR-003 Reset Password | Primary | - |
+| SCR-006 Dashboard | Primary (role) | Primary (admin) |
+| SCR-007 Locked Accounts | - | Primary |
+| SCR-008 Account Detail | - | Primary |
+| SCR-009 Unlock Modal | - | Primary |
+| SCR-012 Suspicious Queue | - | Primary |
+
+---
+
+Versioning and next steps
+- Create Figma file with pages: 00_Cover → 06_Handoff
+- Populate 01_Foundations from designsystem.md tokens
+- Build components in 02_Components with required variants and states
+- Implement all screens in 04_Screens including five state frames
+- Wire prototypes in 05_Prototype to cover flows listed
+- Run accessibility audit (axe) and iterate
+
+Why this approach
+- All screens are derived from use cases (UC-001..UC-009); states required by figma-design-standards are enumerated to ensure handoff completeness and accessibility compliance. This minimizes development ambiguity and supports measurable acceptance criteria.
