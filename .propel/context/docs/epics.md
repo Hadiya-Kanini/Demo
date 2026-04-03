@@ -1,222 +1,213 @@
 ---
-post_title: "Epics for Authentication Service"
+post_title: "Authentication Service Epics"
 author1: "Senior Product Owner"
-post_slug: "authentication-service-epics"
-microsoft_alias: "sppo"
+post_slug: "auth-service-epics"
+microsoft_alias: "spo"
 featured_image: ""
-categories:
-  - "Security"
-  - "Authentication"
-tags:
-  - "epics"
-  - "auth"
-  - "security"
-  - "observability"
-ai_note: "AI-assisted"
-summary: "Comprehensive epic decomposition for the Authentication Service covering functional and non-functional requirements, use cases, dependencies, and backlog refinement items."
-post_date: 2026-04-03
+categories: ["engineering","security","authentication"]
+tags: ["epics","auth","security","compliance"]
+ai_note: "generated-with-assistant"
+summary: "Decomposition of authentication-related requirements into prioritized epics with complete requirement-to-epic mapping and dependency guidance for a brown-field project."
+post_date: "2026-04-03"
 ---
 
 ## Rules Used by the Workflow
-- Zero Orphaned Requirements: every requirement mapped exactly once.
-- Brown-field rule: do NOT create EP-TECH (existing codebase assumed).
-- Business-value ordering: epics ordered by business impact then dependencies.
-- Group by business outcome (not technical layer) and keep epics ~≤12 requirements.
-- Skip [UNCLEAR] items for mapping; report them in Backlog Refinement.
-- UI Impact = Yes only when figma_spec.md (UXR/SCR) is present; otherwise No and Screen References = N/A.
-- EP-DATA not created (design.md did not require a dedicated data epic).
-- Cross-cutting concerns consolidated to single supporting epics (Security & Observability).
+
+- Map every requirement ID (FR-, NFR-, TR-, DR-, UXR-, AIR-, UC-) to exactly one epic; no duplicates or orphans.
+- Treat project as brown-field: DO NOT create EP-TECH.
+- Create EP-DATA only if DR-XXX triggers or design.md entities present (none detected).
+- Skip and capture any [UNCLEAR] requirements in Backlog Refinement (none present in input).
+- Group epics by business outcome; keep each epic ≲12 requirements.
+- Determine UI Impact = Yes only if figma_spec.md exists and UXR/SCR mappings are present (none present → UI Impact: No).
+- Order epics by business value first, then by dependency priority.
+- Provide explicit dependencies (EP-IDs only) to sequence work and unblock downstream epics.
 
 ## Executive Summary
-This document decomposes all requirements from the provided specification into eight actionable epics for a brown-field Authentication Service. The highest business value is delivered by the core Authentication Flow; critical supporting epics establish security and observability foundations that unblock safe production rollout. Each requirement (FR-, NFR-, UC-) is assigned to exactly one epic; there are no [UNCLEAR] tagged items. Epics are ordered by business value and dependency priority.
+
+This document translates the provided authentication specification into nine prioritized epics for a brown-field project. All FR-, NFR-, and UC- requirement IDs from the spec are mapped exactly once. No [UNCLEAR] items were detected. The plan prioritizes core authentication and security foundations, followed by anti-abuse, recovery, session management, RBAC, admin/audit, observability, and an optional risk-based module.
 
 ## Validation Snapshot
-- Total requirements mapped: 28 (14 FR, 8 NFR, 6 UC).
-- [UNCLEAR] requirements: 0.
-- Mapping status: All requirements appear in exactly one epic; zero orphaned or duplicate mappings.
-- Epic sizing: All epics within recommended scope (<= ~12 reqs per epic).
-- Project type detected: brown-field (no EP-TECH generated).
 
-## Epic Summary Table
+- Total requirements mapped: FR:14, NFR:8, UC:6 → 28 IDs assigned across epics.
+- Zero orphaned or duplicated requirement IDs: all requirement IDs appear in exactly one epic.
+- UI mapping: figma_spec.md not provided → UI Impact set to No for all epics; screen references: N/A.
+- Epic sizing: all epics contain ≤12 requirements.
+- Project type: brown-field (no EP-TECH generated).
+- EP-DATA: not created (no DR-XXX or design.md entity trigger).
+- Recommended execution: implement EP-001 (Core Authentication) and EP-007 (Security & Compliance) early/in parallel; other epics sequenced per dependencies.
+
+## Epic Summary Table (with columns: Epic ID | Epic Title | Mapped Requirement IDs)
+
 | Epic ID | Epic Title | Mapped Requirement IDs |
 |---------|------------|------------------------|
-| EP-001 | Authentication Flow & RBAC Redirects | FR-001, FR-002, FR-004, FR-005, UC-001, UC-003, NFR-007 |
-| EP-006 | Security & Compliance Foundation | FR-003, FR-012, NFR-001, NFR-002, NFR-006 |
-| EP-007 | Observability, Performance & Testability | FR-009, NFR-003, NFR-004, NFR-005, NFR-008 |
-| EP-002 | Account Protection & Anti-Abuse | FR-006, FR-008, FR-010, UC-002 |
+| EP-001 | Core Authentication & Login | FR-001, FR-002, FR-004, UC-001, UC-003, NFR-007 |
+| EP-007 | Security & Compliance Foundation | FR-003, FR-012, NFR-001, NFR-002, NFR-006 |
+| EP-002 | Account Protection & Anti-Abuse | FR-006, FR-010, FR-008, UC-002, UC-004 |
 | EP-003 | Password Reset & Self-Service Recovery | FR-007, UC-005 |
 | EP-004 | Session Management & Token Revocation | FR-011, UC-006 |
-| EP-005 | Admin Account Controls & Audit Views | FR-013, UC-004 |
-| EP-008 | Optional Risk-Based Adaptive Controls (AI) | FR-014 |
+| EP-005 | RBAC & Role-based Redirects | FR-005 |
+| EP-006 | Admin Tools, Audit & Operational Visibility | FR-009, FR-013, NFR-005 |
+| EP-008 | Observability, Performance, Scalability & Testability | NFR-003, NFR-004, NFR-008 |
+| EP-009 | Optional Risk-Based Adaptive Controls (AI-candidate) | FR-014 |
 
 ## Epic Description
 
-### EP-001: Authentication Flow & RBAC Redirects
-**Business Value**: Enables users to securely sign in and reach role-appropriate application surfaces — the core gating capability required for all downstream features and revenue-driving workflows.
+### EP-001: Core Authentication & Login
+**Business Value**: Enables end users to securely access the system and establishes the authentication token model required by all downstream features.
 
-**Description**: Implement the primary login flow including client-side and server-side validation, credential verification against existing user datastore using secure hashed passwords, token issuance with configurable TTL, and server-side RBAC-driven redirect targets. Ensure non-revealing error messaging and WCAG 2.1 AA accessibility for login/reset screens.
-
-**UI Impact**: No
-
-**Screen References**: N/A
-
-**Key Deliverables**:
-- POST /auth/login API implementing credential validation and constant-time compare.
-- Client-side validation rules and server-side structured validation responses (400).
-- Token issuance (configurable TTL) and redirect target in response.
-- RBAC server-side enforcement for protected endpoints.
-- Non-revealing error messaging behavior for failure modes.
-- Accessibility compliance checks for login/reset forms.
-- Integration points with existing user datastore and secrets (vault/KMS) for signing keys.
-
-**Dependent EPICs**:
-- EP-006
-- EP-007
-
-### EP-006: Security & Compliance Foundation
-**Business Value**: Provides the cryptographic, transport, and secrets foundations that make the authentication service safe and compliant for production use; blocks insecure or non-compliant deployments.
-
-**Description**: Establish TLS enforcement, password hashing standards, secrets management, DB encryption where applicable, and privacy controls. Define and document hashing parameters and key management processes; enable automated checks to prevent plaintext exposure. Provide guidance and support integration for other epics to use vault/KMS.
+**Description**: Implement the primary email/password login flow with client- and server-side validation, token issuance with configurable TTL, and accessibility-compliant login/reset pages. This epic delivers the baseline auth API and behavior that other features depend on.
 
 **UI Impact**: No
 
 **Screen References**: N/A
 
 **Key Deliverables**:
-- TLS enforcement for production endpoints and automated checks to detect HTTP exposure.
-- Password hashing implementation (Argon2id or bcrypt) with configurable parameters and migration plan.
-- Secrets management integration (vault/KMS) for signing keys, DB credentials, reset token keys.
-- DB encryption configuration guidance for sensitive columns (password hashes, reset tokens).
-- Key rotation policy and operational runbook.
-- Privacy controls and data retention policy aligned with NFR-006.
+- POST /auth/login endpoint with server-side validation and constant-time password comparison
+- Client-side validation rules and structured server validation error responses
+- Token issuance implementation (included expiry TTL) and redirect target in response
+- Performance target validation for login median latency (<1s) in baseline tests (handoff to EP-008 for SLOs)
+- Accessibility checks and fixes to meet WCAG 2.1 AA for login/reset forms
 
-**Dependent EPICs**:
-- (none)
+**Dependent EPICs**: 
 
-### EP-007: Observability, Performance & Testability
-**Business Value**: Enables operational visibility, monitoring, scalability, and test coverage required to operate authentication safely and to validate success criteria post-release.
+### EP-007: Security & Compliance Foundation
+**Business Value**: Ensures cryptographic and platform-level security controls are in place so that authentication operations meet compliance and risk requirements.
 
-**Description**: Implement audit logging export, metrics for auth success/failure/lock events, dashboards and alerts, performance and load test harnesses, and CI pipeline tests (unit/integration/e2e) that verify SLOs and security behaviors. Define SLIs/SLOs for auth latency and availability.
+**Description**: Implement password hashing policy, TLS enforcement, secrets management, DB encryption for sensitive columns, and privacy controls required for secure operation of authentication flows.
 
 **UI Impact**: No
 
 **Screen References**: N/A
 
 **Key Deliverables**:
-- Emit audit events for login success/failure, locks, resets, and revocations; export to centralized logging.
-- Metrics and dashboards for success/failure rates, lock events, reset rates, and latency.
-- Alerts for anomalous failure spikes, brute-force patterns, or performance regressions.
-- Performance and load tests to validate median <1s and P95 <2s targets.
-- CI pipeline integration for unit/integration/e2e tests covering lockout, token expiry, reset single-use, and RBAC enforcement.
+- Secure password hashing implementation (Argon2id or bcrypt) with configurable parameters and documentation
+- TLS enforcement checks and security header configuration (HSTS, CSP, X-Content-Type-Options)
+- Vault/KMS integration for secrets and signing keys; rotation guidance
+- Database column encryption/enabling per platform capabilities for sensitive fields
+- Privacy controls and retention policy implementation guidance
 
-**Dependent EPICs**:
-- (none)
+**Dependent EPICs**: 
 
 ### EP-002: Account Protection & Anti-Abuse
-**Business Value**: Reduces account takeover risk and service abuse, protecting users and reducing operational incidents and fraud-related costs.
+**Business Value**: Protects user accounts and the platform from brute-force, credential stuffing, and abuse; reduces fraud and operational incidents.
 
-**Description**: Implement account lockout after configurable failed attempts, per-IP and per-account rate limiting, optional CAPTCHA insertion points, and appropriate user-facing non-revealing messaging. Log events for locks and failed attempts for downstream analysis.
+**Description**: Implement failed-attempt tracking, configurable account lockout, per-IP and per-account rate limiting, exponential backoff, optional CAPTCHA insertion points, and non-revealing error messaging.
 
 **UI Impact**: No
 
 **Screen References**: N/A
 
 **Key Deliverables**:
-- Account lockout mechanism (configurable threshold, default 5) with lock state enforcement and audit logging.
-- Per-IP and per-account throttling with configurable thresholds and exponential backoff.
-- CAPTCHA insertion support at configurable thresholds.
-- Non-revealing messaging rules for login and reset request responses.
-- Rate-limit and abuse test cases and monitoring rules.
+- Failed-attempt counters and lock/unlock state on user records
+- Account lockout implementation and API responses (423 or generic locked message)
+- Per-IP rate limiter and per-account throttling with configurable thresholds
+- CAPTCHA insertion mechanism hooks and configuration
+- Generic, non-revealing error messages for authentication and reset flows
 
-**Dependent EPICs**:
-- EP-006
-- EP-007
+**Dependent EPICS**: EP-001, EP-007
 
 ### EP-003: Password Reset & Self-Service Recovery
-**Business Value**: Enables secure, low-friction account recovery so legitimate users can regain access without admin intervention, reducing support costs.
+**Business Value**: Enables user self-service recovery, reducing support costs and improving user retention.
 
-**Description**: Implement forgot-password request flow: rate-limited reset request endpoint, generation and email delivery of single-use expiring reset tokens, token validation endpoint, password update with secure hashing, and immediate token invalidation. Ensure reset responses avoid account existence disclosure.
+**Description**: Implement secure forgot-password request flow, single-use expiring reset tokens, rate-limiting for requests, SMTP integration for reset emails, token validation, and secure password update with immediate token invalidation.
 
 **UI Impact**: No
 
 **Screen References**: N/A
 
 **Key Deliverables**:
-- POST /auth/reset-request with rate-limiting and generic success response.
-- Secure single-use reset token generation, storage, TTL (default 1 hour), and invalidation on use.
-- Integration with SMTP/email provider for reset links.
-- Reset validation endpoint and password update flow with hashing.
-- Audit logging for reset request and completion events.
+- /auth/reset-request and /auth/reset-validate endpoints with rate-limiting
+- Unpredictable single-use reset token generation, storage, expiry (default 1 hour), and invalidation on use
+- SMTP/email provider integration and templating guidance
+- Tests validating single-use tokens, expiration, and secure password update process
+- Generic response messages that do not disclose account existence
 
-**Dependent EPICS**:
-- EP-006
-- EP-007
+**Dependent EPICS**: EP-001, EP-007
 
 ### EP-004: Session Management & Token Revocation
-**Business Value**: Provides users and systems with deterministic session termination and immediate protection when credentials or sessions must be invalidated.
+**Business Value**: Ensures users can end sessions and prevents continued access with revoked tokens, improving security posture.
 
-**Description**: Implement logout endpoint and server-side token revocation strategy (revocation list or token versioning) to ensure immediate invalidation of active tokens. Define and test revocation semantics consistent with chosen token model.
-
-**UI Impact**: No
-
-**Screen References**: N/A
-
-**Key Deliverables**:
-- POST /auth/logout implementing token revocation.
-- Revocation strategy design and implementation (revocation list or token versioning).
-- Tests verifying revoked tokens are rejected immediately.
-- Documentation for token model decision and operational runbook.
-
-**Dependent EPICs**:
-- EP-001
-- EP-006
-
-### EP-005: Admin Account Controls & Audit Views
-**Business Value**: Enables administrators to remediate locked accounts and review lockout/audit history, reducing support escalations and improving incident response.
-
-**Description**: Provide authenticated admin endpoints (and supporting UI where applicable) to view lockout audit history and unlock accounts. Ensure admin actions are logged and protected by RBAC checks.
+**Description**: Provide logout API and a server-side token revocation strategy (revocation list or token versioning) so that tokens can be invalidated immediately; ensure expired tokens are rejected.
 
 **UI Impact**: No
 
 **Screen References**: N/A
 
 **Key Deliverables**:
-- Authenticated admin API for unlocking accounts and querying lockout history.
-- Audit view integration (read-only) with exported audit logs from EP-007.
-- RBAC enforcement for admin operations and audit logging of admin actions.
-- Tests for authorization, unlock operation, and audit entry generation.
+- POST /auth/logout endpoint that revokes active tokens
+- Token revocation mechanism design and implementation (revocation list or versioning)
+- Tests validating immediate token revocation and idempotent logout behavior
+- Integration guidance for clients to handle 401 on revoked/expired tokens
 
-**Dependent EPICs**:
-- EP-001
-- EP-006
-- EP-007
+**Dependent EPICS**: EP-001, EP-007
 
-### EP-008: Optional Risk-Based Adaptive Controls (AI)
-**Business Value**: Adds adaptive, risk-based controls to reduce fraud and improve user experience by applying contextual defenses (deferable to phase 2).
+### EP-005: RBAC & Role-based Redirects
+**Business Value**: Ensures users see role-appropriate experiences and enforces access controls across protected endpoints.
 
-**Description**: Implement opt-in risk scoring module that evaluates login attempts (IP reputation, velocity, device, historical signals) and suggests deterministic actions (allow, require CAPTCHA, require MFA). Isolate as an optional module that integrates with core authentication events and logs decisions for review.
+**Description**: Implement server-side RBAC checks for protected endpoints and include role-based redirect target mapping as part of login response; provide tests for at least the three roles (customer, employee, admin).
 
 **UI Impact**: No
 
 **Screen References**: N/A
 
 **Key Deliverables**:
-- Risk scoring component and API producing numeric scores per attempt.
-- Deterministic action mapping for score ranges and integration hooks for CAPTCHA/MFA triggers.
-- Logging of risk decisions and manual review workflow.
-- Isolation as opt-in module with clear enable/disable configuration.
+- Role mapping logic to determine redirect target on login
+- RBAC middleware/enforcement for protected endpoints with 403 responses for unauthorized access
+- Integration and automated tests validating role-based access for sample roles
 
-**Dependent EPICs**:
-- EP-001
-- EP-007
+**Dependent EPICS**: EP-001
 
-## Backlog Refinement Required
-- No requirements tagged [UNCLEAR] were found in the provided artifacts.
-- Open decision items (require clarification before implementation; not [UNCLEAR] tags):
-  - Token model choice: JWT vs opaque tokens and preferred revocation strategy (token versioning vs revocation list).
-  - Lockout semantics: temporary automatic unlock duration vs admin-only unlock vs self-service-only unlock policy.
-  - Password hashing parameters: prefer Argon2id or bcrypt and default cost/memory settings.
-  - Reset token TTL and email template/content approval (default TTL = 1 hour unless changed).
-  - Confirm SMTP provider details and access, and confirm availability of vault/KMS and existing user datastore integration endpoints/schema.
-  - CAPTCHA thresholds and insertion policy for per-account vs per-IP actions.
+### EP-006: Admin Tools, Audit & Operational Visibility
+**Business Value**: Provides operators and administrators with the tools and evidence needed to manage accounts, investigate incidents, and comply with audit requirements.
 
+**Description**: Implement audit logging for authentication events, admin endpoints for unlocking accounts and viewing lockout history, and export of logs/metrics to centralized observability systems.
+
+**UI Impact**: No
+
+**Screen References**: N/A
+
+**Key Deliverables**:
+- Emit structured audit logs for login success/failure, lock events, reset requests/completions, and admin actions
+- Admin API/UI for unlocking accounts and retrieving lockout/audit history (authenticated + logged)
+- Integration with centralized logging and retention guidance
+- Tests verifying audit events are generated and stored
+
+**Dependent EPICS**: EP-001
+
+### EP-008: Observability, Performance, Scalability & Testability
+**Business Value**: Ensures the authentication service meets performance SLIs/SLOs, is scalable, and is testable for safe production operation.
+
+**Description**: Define SLIs/SLOs, implement performance and load testing, ensure horizontal scalability (session store HA if used), and create CI tests that validate critical auth behaviors.
+
+**UI Impact**: No
+
+**Screen References**: N/A
+
+**Key Deliverables**:
+- Performance/load tests demonstrating median login latency <1s and P95 target
+- SLI/SLO definition and dashboard templates for success/failure rates, lock events, and reset events
+- Scalability validation (autoscaling guidance and session store HA tests)
+- CI pipeline tests (unit, integration, e2e) covering lockout, token expiry, reset token single-use, and RBAC
+
+**Dependent EPICS**: EP-001
+
+### EP-009: Optional Risk-Based Adaptive Controls (AI-candidate)
+**Business Value**: Adds advanced, opt-in risk scoring to dynamically adapt controls (CAPTCHA, require MFA) and enhance fraud detection.
+
+**Description**: Implement an optional risk assessment module that computes a numeric score for login attempts (IP reputation, velocity) and maps score ranges to deterministic actions. This epic is explicitly optional and can be deferred.
+
+**UI Impact**: No
+
+**Screen References**: N/A
+
+**Key Deliverables**:
+- Risk scoring engine prototype and deterministic action mapping for low/medium/high ranges
+- Integration points with account protection (CAPTCHA insertion) and logging for flagged events
+- Manual review workflow hooks and logging for flagged attempts
+- Tests validating scoring output and adaptive control behavior
+
+**Dependent EPICS**: EP-001, EP-002
+
+## Backlog Refinement Required (for any [UNCLEAR] requirements)
+
+- None — no requirements in the provided inputs were tagged [UNCLEAR]. All FR-, NFR-, and UC- IDs from the specification have been mapped to epics above.
