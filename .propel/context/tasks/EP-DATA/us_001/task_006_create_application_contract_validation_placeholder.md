@@ -171,4 +171,3 @@ Effort: <= 8 hours total.
 - Implementation Checklist has 6 items (<=8)
 - Effort estimated <=8 hours
 - Checklist items are specific and actionable
-
