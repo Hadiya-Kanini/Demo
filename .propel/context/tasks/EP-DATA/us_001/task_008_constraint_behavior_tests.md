@@ -4,7 +4,7 @@
 - User Story: us_001 (extracted from input)
 - Story Location: .propel/context/tasks/EP-DATA/us_001/us_001.md
 - Acceptance Criteria:  
-    - Given a database migration runner with valid DB credentials, When the migration for us_001 is executed, Then a users table is created with these columns and types: id (UUID PK), email (text, NOT NULL), email_normalized (text, NOT NULL), password_hash (text, NOT NULL), hash_algo (text, NOT NULL), salt (text, NULLABLE), roles (jsonb or text[] NOT NULL DEFAULT ['user']), failed_attempts (integer NOT NULL DEFAULT 0), locked_at (timestamptz NULLABLE), reset_token_hash (text NULLABLE), reset_token_expiry (timestamptz NULLABLE), created_at (timestamptz NOT NULL DEFAULT now()), updated_at (timestamptz NOT NULL DEFAULT now()).
+    - Given a database migration runner with valid DB credentials, When the migration for us_001 is executed, Then a users table is created with columns: id (UUID PK), email (text, NOT NULL), email_normalized (text, NOT NULL), password_hash (text, NOT NULL), hash_algo (text, NOT NULL), salt (text, NULLABLE), roles (jsonb or text[] NOT NULL DEFAULT ['user']), failed_attempts (integer NOT NULL DEFAULT 0), locked_at (timestamptz NULLABLE), reset_token_hash (text NULLABLE), reset_token_expiry (timestamptz NULLABLE), created_at (timestamptz NOT NULL DEFAULT now()), updated_at (timestamptz NOT NULL DEFAULT now()).
     - Given the users table exists, When an insert is attempted with an email whose normalized form duplicates an existing normalized email, Then the DB rejects the insert with a unique-violation error due to a UNIQUE index on email_normalized and demonstration tests assert the expected error code.
     - Given simultaneous login attempts that increment failed_attempts, When multiple increments occur concurrently, Then failed_attempts reflects the total number of attempts (no lost updates) because updates use atomic DB operations (e.g., UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ... RETURNING failed_attempts) and tests simulate concurrency to verify correctness.
     - Given a reset token generation flow, When the application stores reset_token_hash and reset_token_expiry, Then there exists an index on reset_token_hash to allow efficient lookup and the application enforces reset_token_expiry to be a future timestamp at time of insertion; tests verify lookup performance on seeded token records and expiry enforcement in application logic.
@@ -25,6 +25,22 @@
 | **Screen Spec** | N/A |
 | **UXR Requirements** | N/A |
 | **Design Tokens** | N/A |
+
+> **Wireframe Status Legend:**
+> - **AVAILABLE**: Local file exists at specified path
+> - **PENDING**: UI-impacting task awaiting wireframe (provide file or URL)
+> - **EXTERNAL**: Wireframe provided via external URL
+> - **N/A**: Task has no UI impact
+>
+> If UI Impact = No, all design references should be N/A
+
+### **CRITICAL: Wireframe Implementation Requirement (UI Tasks Only)**
+**IF Wireframe Status = AVAILABLE or EXTERNAL:**
+- **MUST** open and reference the wireframe file/URL during UI implementation
+- **MUST** match layout, spacing, typography, and colors from the wireframe
+- **MUST** implement all states shown in wireframe (default, hover, focus, error, loading)
+- **MUST** validate implementation against wireframe at breakpoints: 375px, 768px, 1440px
+- Run `/analyze-ux` after implementation to verify pixel-perfect alignment
 
 ## Applicable Technology Stack
 | Layer | Technology | Version |
@@ -49,8 +65,29 @@
 | **Guardrails Config** | N/A |
 | **Model Provider** | N/A |
 
+> **AI Impact Legend:**
+> - **Yes**: Task involves LLM integration, RAG pipeline, prompt engineering, or AI infrastructure
+- **No**: Task is deterministic (FE/BE/DB only)
+>
+> If AI Impact = No, all AI references should be N/A
+
+### **CRITICAL: AI Implementation Requirement (AI Tasks Only)**
+**IF AI Impact = Yes:**
+- **MUST** reference prompt templates from Prompt Template Path during implementation
+- **MUST** implement guardrails for input sanitization and output validation
+- **MUST** enforce token budget limits per AIR-O01 requirements
+- **MUST** implement fallback logic for low-confidence responses
+- **MUST** log all prompts/responses for audit (redact PII)
+- **MUST** handle model failures gracefully (timeout, rate limit, 5xx errors)
+
 ## Task Overview
-Implement automated integration tests that validate database constraint behavior specified in us_001: verify UNIQUE constraint on email_normalized (duplicate rejection with expected SQL state), CHECK constraint preventing negative failed_attempts, and acceptance/rejection of allowed/disallowed hash_algo values (enum/check). Tests will run against a disposable PostgreSQL test database where the us_001 migration has been applied. Tests should assert precise SQLSTATE codes for constraint violations and confirm successful inserts/updates for allowed values.
+Implement automated integration tests and supporting test helpers that validate database constraint behavior specified in us_001. The goal is to verify:
+- UNIQUE constraint on email_normalized rejects duplicates with the expected SQLSTATE.
+- CHECK constraint prevents negative failed_attempts and concurrency updates behave atomically.
+- Allowed/disallowed hash_algo values are enforced (via enum or check as implemented by the migration).
+- Index on reset_token_hash exists and application-level expiry enforcement is honored in tests where applicable.
+
+Tests run against a disposable PostgreSQL test database where the us_001 migration has been applied. Tests should assert precise SQLSTATE codes for constraint violations and confirm successful inserts/updates for allowed values.
 
 ## Dependent Tasks
 - Artefacts/Tasks:
@@ -63,28 +100,38 @@ Implement automated integration tests that validate database constraint behavior
 - Server/tests/db/test-helpers.js (new)
 - Server/db/migrations/us_001_create_users_table.sql (dependency — must exist)
 - package.json (MODIFY) - add test script and test dependencies
+- .env.example (MODIFY) - add TEST_DATABASE_URL example
 - .github/workflows/test.yml or CI job (MODIFY) - ensure DB for tests (optional; note as impacted)
 
 ## Implementation Plan
 - Create test helper to:
   - connect to PostgreSQL test DB using connection URL from env (TEST_DATABASE_URL)
-  - run up/down migration for us_001 (invoke project's migration runner or execute SQL directly)
-  - provide convenience functions: insertUser(payload), clearUsersTable()
+  - run up/down migration for us_001 (invoke project's migration runner or execute SQL migration file directly)
+  - provide convenience functions: insertUser(payload), clearUsersTable(), getUserById(id), applyMigration(), rollbackMigration()
 - Write Jest-based integration tests (Server/tests/db/constraints.test.js) that:
-  - beforeAll: create test DB schema by applying us_001 migration
-  - afterAll: drop schema or rollback migration
+  - beforeAll: create test DB schema by applying us_001 migration (via test-helpers)
+  - afterAll: drop schema or rollback migration and close DB connections
   - Test 1: UNIQUE email_normalized
     - Insert a user with email_normalized X — expect success
     - Insert a second user with same email_normalized — expect error with SQLSTATE '23505' (unique_violation)
-  - Test 2: CHECK failed_attempts >= 0
+  - Test 2: CHECK failed_attempts >= 0 and atomic increments
     - Attempt to insert user with failed_attempts = -1 — expect SQLSTATE '23514' (check_violation)
-    - Insert user with default/0 and attempt UPDATE users SET failed_attempts = -1 WHERE id=... — expect check_violation
-  - Test 3: hash_algo allowed/disallowed
-    - Define allowed set consistent with migration (e.g., ['argon2', 'bcrypt', 'pbkdf2', 'legacy_sha256'])
+    - Insert a user with default/0, then attempt UPDATE users SET failed_attempts = -1 WHERE id=... — expect '23514'
+    - Concurrency check: run multiple parallel UPDATEs using UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ... RETURNING failed_attempts and verify final value equals starting + number of increments
+  - Test 3: hash_algo allowed/rejected values
+    - Determine allowed set consistent with migration (e.g., ['argon2', 'bcrypt', 'pbkdf2', 'legacy_sha256'])
     - Insert user rows for each allowed value — expect success
-    - Attempt insert with 'unknown_algo' — expect either check_violation (23514) or user-defined enum error (if enum used) with SQLSTATE '22P02' or appropriate; assert that failing operation does not succeed and assert the SQLSTATE is a constraint violation (prefer checking for 23514 or enum-specific)
-- Make tests resilient: catch and assert SQLSTATE from error.code, and fail if insertion unexpectedly succeeds
-- Add package.json scripts and test dependencies (jest, pg) and instructions in README/test instructions
+    - Attempt insert with 'unknown_algo' — expect constraint violation ('23514' or enum-related SQLSTATE); assert that operation fails and error.code indicates constraint violation
+  - Test 4: reset_token_hash index & expiry semantics (application-level)
+    - Insert rows with reset_token_hash and reset_token_expiry in the future — verify lookup by reset_token_hash succeeds
+    - Insert or seed expired token and verify application logic (test helper or small query) treats it as expired (i.e., SELECT where reset_token_expiry > now())
+    - Optionally verify existence of index on reset_token_hash via pg_indexes or pg_class lookup
+- Make tests resilient and explicit:
+  - Catch DB errors and assert error.code (SQLSTATE)
+  - Fail tests if unexpected success occurs
+  - Use transactions where appropriate and ensure cleanup between tests
+- Update package.json devDependencies and add test script (e.g., "test:db": "jest --runInBand --testTimeout=20000")
+- Add .env.example TEST_DATABASE_URL guidance and a short README note (Server/tests/README.md) explaining how to run DB tests locally with Docker
 
 ## Current Project State
 - app/ (frontend)  
@@ -102,11 +149,14 @@ Implement automated integration tests that validate database constraint behavior
 ## Expected Changes
 | Action | File Path | Description |
 |--------|-----------|-------------|
-| CREATE | Server/tests/db/test-helpers.js | Test helper to manage DB connection, apply/rollback migration (or execute migration SQL), and helper functions for test operations (insertUser, clearUsersTable). |
-| CREATE | Server/tests/db/constraints.test.js | Jest integration tests covering UNIQUE email_normalized, CHECK failed_attempts >= 0, and allowed/rejected hash_algo values. |
+| CREATE | Server/tests/db/test-helpers.js | Test helper to manage DB connection, apply/rollback migration (or execute migration SQL), and helper functions for test operations (insertUser, clearUsersTable, getUserById). |
+| CREATE | Server/tests/db/constraints.test.js | Jest integration tests covering UNIQUE email_normalized, CHECK failed_attempts >= 0, atomic increment concurrency, reset_token_hash lookup/expiry, and allowed/rejected hash_algo values. |
+| CREATE | Server/tests/README.md | Short instructions for running DB integration tests locally (Docker commands, env vars). |
 | MODIFY | package.json | Add test script ("test:db") and devDependencies (jest, pg, dotenv) or update existing test script to include DB setup. |
-| MODIFY | .env.example | Add TEST_DATABASE_URL example for local test runs (if present in repo). |
-| MODIFY | .github/workflows/test.yml | (Optional) Add or update CI job to spin up PostgreSQL Docker service for DB tests. (If repo uses CI; if not present, this line may be omitted.) |
+| MODIFY | .env.example | Add TEST_DATABASE_URL example for local test runs. |
+| MODIFY | .github/workflows/test.yml | (Optional) Add or update CI job to spin up PostgreSQL Docker service for DB tests and run test:db. (If repo uses CI; if not present, this modification may be omitted.) |
+
+> Only list concrete, verifiable file operations. No speculative directory trees.
 
 ## External References
 - PostgreSQL: Constraints and Error Codes — https://www.postgresql.org/docs/current/ddl-constraints.html
@@ -114,6 +164,7 @@ Implement automated integration tests that validate database constraint behavior
 - node-postgres (pg) documentation: https://node-postgres.com/
 - Jest docs: https://jestjs.io/docs/getting-started
 - Example migration patterns for Postgres (partial index, enum type): https://www.postgresql.org/docs/current/sql-createenum.html
+- Using EXPLAIN/ANALYZE and index lookups in Postgres: https://www.postgresql.org/docs/current/using-explain.html
 
 ## Build Commands
 - Install dependencies: npm ci
@@ -138,13 +189,12 @@ Notes:
 - UI/AI specific checks are N/A for this task; they remain in the checklist template but are not applicable.
 
 ## Implementation Checklist
-- [ ] Create Server/tests/db/test-helpers.js to manage DB connection, apply/rollback migration, and provide insertUser/clear functions (<=2 hours)
-- [ ] Create Server/tests/db/constraints.test.js with Jest tests for UNIQUE, CHECK, and hash_algo acceptance/rejection (<=3 hours)
+- [ ] Create Server/tests/db/test-helpers.js to manage DB connection, apply/rollback migration, and provide insertUser/clear/get helpers (<=2 hours)
+- [ ] Create Server/tests/db/constraints.test.js with Jest integration tests for UNIQUE, CHECK, concurrency atomic increments, reset_token_hash lookup/expiry, and hash_algo acceptance/rejection (<=3 hours)
 - [ ] Add/modify package.json to include "test:db" script and required devDependencies (<=0.5 hours)
+- [ ] Create Server/tests/README.md with local run instructions and Docker snippet for spinning up a test DB (<=0.5 hours)
 - [ ] Run tests locally against a disposable Postgres instance and iterate on assertions for SQLSTATE codes (<=1.5 hours)
-- [ ] Update .env.example with TEST_DATABASE_URL guidance and document test run steps in README or tests/README.md (<=0.5 hours)
 
 Estimated effort: 7.5 hours
 
 - **Note:** These tests assume the us_001 migration file (Server/db/migrations/us_001_create_users_table.sql) is present and creates enum/check/unique constraints as described. If migration uses an application migration runner, test-helpers must invoke it (adjust helper accordingly).
-
