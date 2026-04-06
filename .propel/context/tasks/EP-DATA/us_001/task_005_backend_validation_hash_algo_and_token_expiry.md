@@ -2,7 +2,7 @@
 
 ## Requirement Reference
 - User Story: us_001 (extracted from input)
-- Story Location: .propel/context/tasks/EP-DATA/us_001/us_001.md
+- Story Location: .propel/context/tasks/us_001/us_001.md
 - Acceptance Criteria:  
     - "Given supported hash algorithms configured in the application, When a row is written or updated with a hash_algo value, Then either a database-level CHECK/ENUM constraint or application-level validation restricts hash_algo to the allowed set (document the allowed list in migration or application config) and password_hash column size/format supports storing modern algorithm outputs and legacy values; unit tests verify permitted and rejected hash_algo values."
     - "Given a reset token generation flow, When the application stores reset_token_hash and reset_token_expiry, Then there exists an index on reset_token_hash to allow efficient lookup and the application enforces reset_token_expiry to be a future timestamp at time of insertion; tests verify lookup performance on seeded token records and expiry enforcement in application logic."
@@ -142,4 +142,3 @@ Add application-side configuration for allowed hash algorithms, implement model-
 Notes:
 - Reference server/config/allowedHashAlgos.ts from model/service code (MANDATORY).
 - Effort estimate for this task: <= 8 hours.
-
