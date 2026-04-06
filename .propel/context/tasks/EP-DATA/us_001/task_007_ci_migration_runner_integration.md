@@ -4,11 +4,11 @@
 - User Story: us_001 (extracted from input)
 - Story Location: .propel/context/tasks/EP-DATA/us_001/us_001.md
 - Acceptance Criteria:  
-    - Given a database migration runner with valid DB credentials, When the migration for us_001 is executed, Then a users table is created with these columns and types: id (UUID PK), email (text, NOT NULL), email_normalized (text, NOT NULL), password_hash (text, NOT NULL), hash_algo (text, NOT NULL), salt (text, NULLABLE), roles (jsonb or text[] NOT NULL DEFAULT ['user']), failed_attempts (integer NOT NULL DEFAULT 0), locked_at (timestamptz NULLABLE), reset_token_hash (text NULLABLE), reset_token_expiry (timestamptz NULLABLE), created_at (timestamptz NOT NULL DEFAULT now()), updated_at (timestamptz NOT NULL DEFAULT now()).
-    - Given the users table exists, When an insert is attempted with an email whose normalized form duplicates an existing normalized email, Then the DB rejects the insert with a unique-violation error due to a UNIQUE index on email_normalized and demonstration tests assert the expected error code.
-    - Given simultaneous login attempts that increment failed_attempts, When multiple increments occur concurrently, Then failed_attempts reflects the total number of attempts (no lost updates) because updates use atomic DB operations (e.g., UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ... RETURNING failed_attempts) and tests simulate concurrency to verify correctness.
-    - Given a reset token generation flow, When the application stores reset_token_hash and reset_token_expiry, Then there exists an index on reset_token_hash to allow efficient lookup and the application enforces reset_token_expiry to be a future timestamp at time of insertion; tests verify lookup performance on seeded token records and expiry enforcement in application logic.
-    - Given hash algorithm policy, When creating or updating records, Then either a database-level CHECK/ENUM constraint or application-level validation restricts hash_algo to the allowed set (document the allowed list in migration or application config) and password_hash column size/format supports storing modern algorithm outputs and legacy values; unit tests verify permitted and rejected hash_algo values.
+    - Given a database migration runner with valid DB credentials, When the migration for us_001 is applied, Then the users table is created with columns: id (UUID PK), email (text, NOT NULL), email_normalized (text, NOT NULL), password_hash (text, NOT NULL), hash_algo (text, NOT NULL), salt (text, NULLABLE), roles (jsonb or text[] NOT NULL with default ['user']), failed_attempts (integer NOT NULL DEFAULT 0), locked_at (timestamptz NULLABLE), reset_token_hash (text NULLABLE), reset_token_expiry (timestamptz NULLABLE), created_at (timestamptz NOT NULL DEFAULT now()), updated_at (timestamptz NOT NULL DEFAULT now()).
+    - Given the new schema, When a new user row is inserted with email, email_normalized, and password/hash fields, Then the database enforces a UNIQUE constraint on email_normalized and the insert succeeds for a single unique normalized email and fails with a unique-violation error for duplicates.
+    - Given the new schema, When failed_attempts is updated by concurrent login attempts, Then increments are atomic (performed using a single UPDATE ... SET failed_attempts = failed_attempts + 1 or DB atomic increment) and the database enforces a CHECK constraint failed_attempts >= 0 so negative values cannot be persisted.
+    - Given the schema and application policy, When a reset token is generated and its hash stored, Then there is an index on reset_token_hash (and a partial index for non-null and not-expired tokens if DB supports partial indexes) to allow efficient lookup by token hash and to support single-use token verification; application sets reset_token_expiry > now() at time of creation and enforces expiry semantics.
+    - Given supported hash algorithms configured in the application, When a row is written or updated with a hash_algo value, Then the DB or migrations include a domain-level constraint (enum/check) listing allowed algorithm identifiers (e.g., 'argon2', 'bcrypt', 'pbkdf2', 'legacy_sha256') or the application validates hash_algo against an allowed set and rejects unknown algorithms; password_hash column can store variable-length binary/text to accommodate algorithms and legacy formats.
 - Edge Case:
     - What happens when a legacy password hash format is encountered? - The schema allows storing legacy hash formats (hash_algo captures legacy type; salt field is nullable). The application must detect legacy hash_algo during authentication and perform migration-on-login (rehash into modern algorithm) in a separate story. The DB will accept the legacy record; migration is handled at application layer, not via destructive DB migration.
     - How does the system handle concurrent updates to failed_attempts and locked_at? - The schema supports atomic increment semantics; application must perform DB-level atomic UPDATEs (e.g., UPDATE ... SET failed_attempts = failed_attempts + 1 RETURNING failed_attempts) and use row-level locking (SELECT ... FOR UPDATE) where necessary to prevent lost updates. Tests must validate concurrent increments and lockout threshold behavior.
@@ -144,3 +144,20 @@ Example tree (placeholder):
 - [ ] Fallback logic tested with low-confidence/error scenarios — N/A
 - [ ] Token budget enforcement verified — N/A
 - [ ] Audit logging verified (no PII in logs) — ensure CI artifacts
+
+## Implementation Checklist
+- Add .github/workflows/migration-runner.yml with service container (Postgres) and steps to call ci/run_migration_and_verify.sh. (Estimated: 1.5h)
+- Create ci/run_migration_and_verify.sh that: waits for DB, runs migration runner, runs verify_schema.sql, executes integration tests via npm script, attempts rollback/drop, and uploads artifacts on failure. (Estimated: 2h)
+- Implement ci/verify_schema.sql containing concrete checks for table, columns, unique index on email_normalized, check constraint failed_attempts >= 0, reset_token_hash index, and presence of enum/check for hash_algo. Exit non-zero on mismatch. (Estimated: 1h)
+- Add ci/artifact-collect.sh to dump schema (pg_dump/schema-only) and capture migration/test logs when a step fails; wire into workflow as post-failure step. (Estimated: 0.5h)
+- Add package.json script "ci:migrations" that accepts CI_DATABASE_URL env var and runs integration tests against it; update README/README-CI snippet. (Estimated: 0.5h)
+- Optional: add ci/docker-compose.ci.yml for local reproduction that mirrors GitHub Actions service container envs. (Estimated: 0.5h)
+- Run the workflow locally or via GitHub Actions dry-run, iterate on flaky waits/timeouts, validate artifacts and verify cleanup behavior (drop schema or use ephemeral DB). (Estimated: 1h)
+- Effort estimate (total): 7 hours
+
+## RULES:
+- Implementation Checklist must have <=8 items
+- Effort must be <=8 hours
+- Be specific and actionable — no vague descriptions
+- Expected Changes table must list concrete file paths (CREATE/MODIFY/DELETE)
+- Acceptance Criteria must come from the parent User Story
