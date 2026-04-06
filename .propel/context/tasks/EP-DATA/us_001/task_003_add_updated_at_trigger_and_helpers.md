@@ -4,14 +4,13 @@
 - User Story: us_001 (extracted from input)
 - Story Location: .propel/context/tasks/EP-DATA/us_001/us_001.md
 - Acceptance Criteria:  
-    - Given a database migration runner with valid DB credentials, When the migration for us_001 is executed, Then a users table is created with these columns and types including updated_at (timestamptz NOT NULL DEFAULT now()).
-    - Given simultaneous login attempts that increment failed_attempts, When multiple increments occur concurrently, Then failed_attempts reflects the total number of attempts (no lost updates) because updates use atomic DB operations (e.g., UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ... RETURNING failed_attempts).
-    - Given the schema, When failed_attempts is updated, Then there is a CHECK constraint failed_attempts >= 0 so negative values cannot be persisted.
-    - Given a database migration runner with valid credentials, When this task's migration is applied, Then the migration creates trigger/function artifacts to maintain updated_at automatically and provides helper(s) demonstrating atomic increment semantics and includes a down migration to remove those artifacts.
+    - Given the users table exists, When creating or updating user records, Then the backend validates hash_algo against a documented allowed set (e.g., 'argon2', 'bcrypt', 'pbkdf2', 'legacy_sha256') and rejects unknown algorithms with a clear, testable error.
+    - Given the users table exists, When creating new users, Then the backend persists roles in the DB consistent with the schema (jsonb or text[]) and ensures a default of ['user'] is applied when roles are omitted.
+    - Given the new schema and app-level validations, When hash_algo or roles are updated by clients, Then invalid values are rejected by the backend before attempting DB writes and unit/integration tests verify these behaviors.
 - Edge Case:
-    - How does the system handle concurrent updates to failed_attempts and locked_at? - The schema supports atomic increment semantics; application must perform DB-level atomic UPDATEs (e.g., UPDATE ... SET failed_attempts = failed_attempts + 1 RETURNING failed_attempts) and use row-level locking where necessary. This task provides a helper demonstrating atomic UPDATE; concurrency tests should validate behavior.
-    - What happens when a legacy password hash format is encountered? - N/A to this task beyond ensuring updated_at/failed_attempts helpers don't break legacy records; schema-level support for legacy formats is handled elsewhere in us_001.
-    - What happens when reset token hash collisions or race conditions occur? - N/A to this task (this task focuses on triggers and helper functions).
+    - What happens when a legacy password hash format is encountered? - The backend must accept rows with legacy hash_algo values when they are in the allowed set (e.g., 'legacy_sha256') and must not attempt destructive conversion; it should tag/record the algorithm and allow application-layer migration-on-login in a separate story.
+    - How does backend handle missing roles or unexpected roles type (string vs array)? - The backend must normalize input (accept single role string or array) into the canonical server representation (JSON array or text[]), apply the default ['user'] when omitted or empty, and return a 4xx validation error for invalid types (e.g., object).
+    - How to keep allowed hash_algo list in sync with DB-level constraints? - This task requires documenting and sourcing the allowed set from a single config location; DB-level enum/check should be referenced in documentation and mirrored in backend config. If DB-level constraint changes, update the backend config accordingly.
 
 ## Design References (Frontend Tasks Only)
 | Reference Type | Value |
@@ -29,9 +28,9 @@
 | Layer | Technology | Version |
 |-------|------------|---------|
 | Frontend | N/A | N/A |
-| Backend | SQL migration scripts (plain SQL) | N/A |
+| Backend | Node.js (TypeScript) | 18.x / 5.x (TS) |
 | Database | PostgreSQL | 14.x (>= 12 recommended) |
-| Library | psql client / migration runner (project default) | N/A |
+| Library | node-postgres (pg) / Zod or Joi for validation | pg v8.x, zod v4.x (or joi v17.x) |
 | AI/ML | N/A | N/A |
 | Vector Store | N/A | N/A |
 | AI Gateway | N/A | N/A |
@@ -49,107 +48,130 @@
 | **Model Provider** | N/A |
 
 ## Task Overview
-Create a database migration that:
-- Adds (or ensures) a trigger function set_updated_at() that sets NEW.updated_at = now() on row updates and installs a trigger on the users table to invoke it BEFORE UPDATE.
-- Adds helper function increment_failed_attempts(uid UUID) that atomically increments failed_attempts and returns the new value (demonstrates correct atomic UPDATE semantics).
-- Adds (if missing) a CHECK constraint users_failed_attempts_nonnegative ensuring failed_attempts >= 0.
-- Provide a reversible down migration that drops the trigger and functions and optionally removes the constraint if added by this migration.
-- Include short SQL test/demo snippets/comments showing recommended usage (atomic UPDATE usage and RETURNING usage) and a small integration test SQL script to validate the helper.
+Mirror the allowed hash algorithm set and canonical roles handling in the backend code so application-level validation and normalization match the DB schema expectations described in us_001. Deliverables include a single source-of-truth configuration for allowed hash algorithms, input validation and normalization for roles on create/update flows, unit and integration tests validating acceptance criteria, and short documentation describing how to maintain parity with DB-level constraints.
 
-Purpose: ensure updated_at is reliably maintained and provide a DB-side helper to illustrate an atomic increment pattern required by the broader user story (us_001). Provide up and down migration artifacts for deployment.
+Capabilities delivered:
+- Backend validation for hash_algo using a central config and clear errors for unsupported algorithms.
+- Normalization and persistence logic for roles (accept string/array, persist as JSONB/text[]), applying default ['user'].
+- Tests that validate behavior and edge-cases (legacy algos accepted, invalid types rejected).
+- Documentation updates describing where to update allowed algorithms when DB constraints change.
 
 ## Dependent Tasks
-- .propel/context/tasks/EP-DATA/us_001/us_001.md (users table migration must exist or be applied prior to installing triggers/helpers)
-- Task 000 / discovery confirming PostgreSQL version and migration tooling (must have permissions to create functions and triggers)
-- If users table was created in a prior migration, ensure that migration has been applied (migration runner state)
+- .propel/context/tasks/EP-DATA/us_001/us_001.md (database migration creating users table, with roles column and hash_algo constraint or documentation)
+- Task 000 / discovery confirming PostgreSQL version and whether users.roles is jsonb or text[] (implementation must target the actual DB column type)
+- CI task to run integration tests against dev DB with seeded users table
 
 ## Impacted Components
-- New SQL migration files in the repository migrations/ (up/down)
-- DB functions:
-  - public.set_updated_at()
-  - public.increment_failed_attempts(uid UUID)
-- Trigger:
-  - trigger on users table: trg_set_updated_at
-- Optional: Constraint users_failed_attempts_nonnegative added to users table if absent
+- Backend configuration:
+  - config/auth.ts | config/auth.yaml (allowedHashAlgos)
+- Validation layer:
+  - src/validation/schemas/user.ts (Zod/Joi schema for create/update user requests)
+- Service layer:
+  - src/services/userService.ts (createUser, updateUser) — normalize roles, validate hash_algo
+  - src/services/authService.ts (if it validates hash_algo on login/signup)
+- Database access layer / queries:
+  - src/db/users.repo.ts (ensure roles persistence uses JSONB/text[] parameters)
+- Tests:
+  - tests/unit/user.validation.spec.ts
+  - tests/integration/user.roles_and_hash_algo.spec.ts
+- Documentation:
+  - README.md (database section) — add note about allowed hash algorithms and roles handling
 
 ## Implementation Plan
-- Create an UP migration SQL file that:
-  1. Creates a plpgsql function public.set_updated_at() RETURN TRIGGER which sets NEW.updated_at = now() and returns NEW.
-  2. Creates the trigger trg_set_updated_at BEFORE UPDATE ON users FOR EACH ROW WHEN (OLD.* IS DISTINCT FROM NEW.*) or simply execute on every update (simpler: always set NEW.updated_at = now()).
-  3. Creates a plpgsql function public.increment_failed_attempts(p_id UUID) RETURNS integer that atomically runs UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = p_id RETURNING failed_attempts INTO result; returns result.
-  4. Adds CHECK constraint users_failed_attempts_nonnegative if not already present: failed_attempts >= 0.
-  5. Add GRANT/SECURITY considerations comment: functions marked as SECURITY DEFINER only if project policy allows; by default create as normal functions.
-  6. Add demonstration SQL snippet (as comment) showing how to use increment_failed_attempts and the equivalent UPDATE ... RETURNING approach.
-- Create a DOWN migration SQL file that:
-  1. Drops the trigger trg_set_updated_at if exists.
-  2. Drops function public.set_updated_at() if exists.
-  3. Drops function public.increment_failed_attempts(UUID) if exists.
-  4. Optionally removes the constraint users_failed_attempts_nonnegative if it was created by this migration (guarded with IF EXISTS and check for constraint owner).
-- Create a tests SQL file (integration script) that:
-  1. Inserts a test user (if not present) or uses an existing seeded user.
-  2. Calls increment_failed_attempts concurrently (or in quick succession) and asserts returned values/increment semantics.
-  3. Verifies updated_at changes on update and that the trigger sets it to a newer timestamp.
-- Write clear comments in migration files describing assumptions and rollback semantics.
-- Run migration apply/rollback locally in dev DB to validate.
+- Confirm column type for roles in DB (jsonb vs text[]) by inspecting migration artifact from us_001. Choose mapping strategy:
+  - If roles = jsonb: persist roles as JSON array.
+  - If roles = text[]: map incoming array to Postgres array parameter, or use text[] handling in pg.
+- Create a central configuration file (e.g., config/auth.ts) exporting:
+  - allowedHashAlgos: string[] = ['argon2', 'bcrypt', 'pbkdf2', 'legacy_sha256'] (document rationale)
+  - rolesDefault: string[] = ['user']
+- Update validation schema (Zod/Joi) for user create/update:
+  - hash_algo: string().refine(value => allowedHashAlgos.includes(value), { message: ... })
+  - roles: accept string or array of strings; if omitted -> rolesDefault; validate each role against allowed role list if project has role policy (if none, allow any string matching ^[a-z_]+$).
+- Update service layer:
+  - createUser(data): normalize roles to array, apply default, validate hash_algo using config, then call users.repo.insert with appropriate parameter shapes.
+  - updateUser(id, patch): if hash_algo present, revalidate; if roles present, normalize and persist.
+- Update database repository code:
+  - Ensure parameter binding uses JSON.stringify for jsonb or array for text[]; add conversion helpers if necessary.
+  - Protect against SQL injection by using parameterized queries.
+- Add unit tests:
+  - Validation tests: accept allowed algos, reject disallowed; normalize roles variants.
+  - Service tests: ensure default roles applied when omitted; ensure normalized persisted payload expected by repo is produced (can mock repo).
+- Add integration tests (run against dev DB):
+  - Create user request with various roles input (string, array, omitted) -> verify stored representation and default applied.
+  - Attempt create/update with unsupported hash_algo -> backend returns 4xx and no DB write.
+  - Create user with legacy hash_algo value included in allowed list -> backend accepts and persists algorithm identifier.
+- Documentation:
+  - Update README.md database section with the canonical allowed hash_algo list location and instructions to keep in sync with DB-level constraints and migrations.
+- Run CI: unit tests and integration tests against test DB.
 
 ## Current Project State
 - app/ (frontend) — N/A for this task
-- Server/ or db/ migration folder exists per project conventions. (Replace with repository actual structure during implementation.)
-- Assume there is an existing migration that created users table per us_001 or it will be applied before this task.
-
-Example (placeholder) project tree context:
+- Server/
+  - src/
+    - config/ (may exist)
+    - services/
+    - db/
+    - validation/
+    - controllers/
+  - tests/
 - migrations/
-  - 2026xxxx_us_001_create_users_table.up.sql (exists or will exist)
-  - 2026xxxx_us_001_create_users_table.down.sql
-  - migrations/... (new files to be added by this task)
+  - ... (us_001 users table migration exists or will be applied)
+- NOTE: Exact repo paths may differ; implementers must adapt paths to repository conventions. Confirm whether roles column is jsonb or text[] before persisting.
 
 ## Expected Changes
 | Action | File Path | Description |
 |--------|-----------|-------------|
-| CREATE | migrations/20260406_add_updated_at_trigger_and_helpers.up.sql | UP migration: creates set_updated_at() trigger function, trg_set_updated_at trigger on users, increment_failed_attempts(UUID) helper, and adds CHECK constraint users_failed_attempts_nonnegative (guarded if not exists). Includes comments and usage samples. |
-| CREATE | migrations/20260406_add_updated_at_trigger_and_helpers.down.sql | DOWN migration: drops trigger, drops functions, and removes CHECK constraint if created. |
-| CREATE | db/tests/sql/test_increment_failed_attempts.sql | SQL script to validate increment_failed_attempts, demonstrate atomic increments and trigger-updated updated_at behavior (to be run in dev CI). |
-| MODIFY | README.md (database section) | Add short documentation snippet describing the new functions, how to use increment helper, and notes about security/permissions and rollback. |
+| CREATE | src/config/auth.ts | Exports allowedHashAlgos (single source-of-truth), rolesDefault, and optional allowedRoles pattern. |
+| MODIFY | src/validation/schemas/user.ts | Add/refine hash_algo validation against allowedHashAlgos; normalize/validate roles input (string|array -> array). |
+| MODIFY | src/services/userService.ts | Ensure createUser/updateUser validate hash_algo, normalize roles, apply default ['user'], and call repo with correctly shaped data. |
+| MODIFY | src/db/users.repo.ts | Ensure insert/update queries serialize roles correctly for jsonb/text[] and preserve existing behavior; add comments about expected DB column type. |
+| CREATE | tests/unit/user.validation.spec.ts | Unit tests for hash_algo validation and roles normalization. |
+| CREATE | tests/integration/user.roles_and_hash_algo.spec.ts | Integration tests verifying persisted roles representation and rejection of disallowed hash_algo (runs against dev/test DB). |
+| MODIFY | README.md | Database section: document allowed hash algorithms config location, roles canonical representation, and maintenance notes to keep backend and DB constraints in sync. |
 
 ## External References
-- PostgreSQL docs: CREATE FUNCTION (https://www.postgresql.org/docs/current/sql-createfunction.html)
-- PostgreSQL docs: Triggers (https://www.postgresql.org/docs/current/sql-createtrigger.html)
-- PostgreSQL docs: CHECK constraint (https://www.postgresql.org/docs/current/ddl-constraints.html)
-- Example atomic increment pattern: UPDATE ... SET failed_attempts = failed_attempts + 1 WHERE id = $1 RETURNING failed_attempts;
+- Zod docs: https://github.com/colinhacks/zod
+- Joi docs: https://joi.dev
+- node-postgres docs: https://node-postgres.com/
+- PostgreSQL JSONB docs: https://www.postgresql.org/docs/current/datatype-json.html
+- PostgreSQL text[] docs: https://www.postgresql.org/docs/current/arrays.html
+- Usability note: bcrypt/argon2 differences — Argon2 recommended: https://www.argon2.net/
 
 ## Build Commands
-- Apply migration (project-specific migration runner). Example using psql:
-  - psql "postgresql://user:pass@localhost:5432/dbname" -f migrations/20260406_add_updated_at_trigger_and_helpers.up.sql
-- Rollback migration:
-  - psql "postgresql://user:pass@localhost:5432/dbname" -f migrations/20260406_add_updated_at_trigger_and_helpers.down.sql
-- Run tests:
-  - psql "postgresql://user:pass@localhost:5432/dbname" -f db/tests/sql/test_increment_failed_attempts.sql
+- Install dependencies:
+  - npm install
+- Run unit tests:
+  - npm test (or npm run test:unit)
+- Run integration tests (requires dev/test DB configured):
+  - npm run test:integration
+- Lint/format (project specific):
+  - npm run lint
+- Example local run:
+  - NODE_ENV=test DATABASE_URL="postgres://user:pass@localhost:5432/testdb" npm run test:integration
 
 (Refer to project migration tooling and CI build steps at ../.propel/build/)
 
 ## Implementation Validation Strategy
-- [ ] Unit tests pass (SQL test script run locally)
-- [ ] Integration tests pass (test_increment_failed_attempts.sql verifies concurrency/sequence)
-- [ ] Visual comparison against wireframe completed at 375px, 768px, 1440px — N/A
-- [ ] Run /analyze-ux to validate wireframe alignment — N/A
-- [ ] Prompt templates validated with test inputs — N/A
-- [ ] Guardrails tested for input sanitization and output validation — N/A
-- [ ] Fallback logic tested with low-confidence/error scenarios — N/A
-- [ ] Token budget enforcement verified — N/A
-- [ ] Audit logging verified (no PII in logs) — N/A
+- [ ] Unit tests pass (validation and service unit tests)
+- [ ] Integration tests pass (create/update flows against dev/test DB)
+- [ ] Backend validation rejects unsupported hash_algo values with a 4xx error and no DB write
+- [ ] Roles normalization verified: single string -> ['role'], array preserved, omitted -> ['user']
+- [ ] Persisted representation matches DB column type (jsonb array or text[]), verified by integration tests
+- [ ] README.md updated with instructions to keep backend allowedHashAlgos in sync with DB-level constraints
 
 ## Implementation Checklist
 - Effort estimate: 6 hours
-- [ ] Create UP migration SQL file implementing set_updated_at trigger function, trg_set_updated_at trigger, increment_failed_attempts(UUID) helper, and CHECK constraint (if absent).
-- [ ] Create DOWN migration SQL file that safely reverts the changes (drop trigger, drop functions, drop constraint if created).
-- [ ] Create a small SQL test script (db/tests/sql/test_increment_failed_attempts.sql) demonstrating atomic increments and updated_at behavior; run locally against dev DB.
-- [ ] Update README.md (database section) with usage notes and permissions/security considerations for created functions.
-- [ ] Run migration apply and rollback in local dev DB and verify no residual objects remain after rollback.
-- [ ] Verify that increment_failed_attempts() returns the incremented value and that multiple rapid calls increment monotonically (run sample concurrency test).
-- [ ] Validate that updated_at is updated on row updates and the trigger does not error on legacy rows (NULLable fields).
-- [ ] Commit migration and test artifacts and open PR with migration SQL and test script for review.
+- [ ] Add src/config/auth.ts with allowedHashAlgos and rolesDefault (single source-of-truth).
+- [ ] Update src/validation/schemas/user.ts to validate hash_algo and normalize/validate roles input.
+- [ ] Update src/services/userService.ts (and authService if needed) to enforce validation, normalization, and apply default roles before DB writes.
+- [ ] Update src/db/users.repo.ts to ensure roles are serialized correctly for jsonb/text[] and add helpful comments.
+- [ ] Add unit and integration tests (tests/unit/user.validation.spec.ts and tests/integration/user.roles_and_hash_algo.spec.ts) and run them against dev/test DB.
+- [ ] Update README.md database section describing where allowedHashAlgos lives and how to keep it in sync with DB constraints.
+- [ ] Run full test suite and a manual integration check against dev DB to confirm ACs (hash_algo validation, roles persistence).
 
 ## RULES:
-- Implementation Checklist has <=8 items
-- Effort <=8 hours
-- Acceptance Criteria are from the parent User Story (us_001) and focused on updated_at and atomic increment semantics.
+- Implementation Checklist must have <=8 items
+- Effort must be <=8 hours
+- Be specific and actionable — no vague descriptions
+- Expected Changes table lists concrete file paths (CREATE/MODIFY)
+- Acceptance Criteria are from the parent User Story (us_001) and focused on hash_algo and roles handling
