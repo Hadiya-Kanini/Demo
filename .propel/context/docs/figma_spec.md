@@ -1,514 +1,440 @@
-# Figma Design Specification
+## Figma Design Specification — AuthService
 
-## 1. UI Impact Assessment
-
-Summary
-- UI impact: YES — authentication and account recovery flows are UI-critical.
-- Primary UI features: Login (email/password), inline validation, account lockout notices, forgot-reset flows, optional MFA enrollment/verify, CAPTCHA escalation, admin unlock and audit-list UIs, role-based landing/redirect interstitial.
-- Source references: Requirements Specification (Auth Service FR-001..FR-013, UC-001..UC-008).
-- Stakeholders: Product Owner, Security Lead, Support Lead, Compliance, Frontend Engineering.
-
-High-level Decision Constraints
-- Must follow Figma 6-Page Standard (00_Cover → 06_Handoff).
-- All frames use Auto Layout, tokens only (no hard-coded spacing/colors).
-- All screens include five states (Default, Loading, Empty, Error, Validation).
-- Accessible by design: WCAG 2.2 AA baseline, dark-mode parity required.
-
-UI Impact Mapping (quick)
-- Authentication flows (SCR-001..SCR-010) — P0: End User primary path.
-- Admin flows (SCR-011, SCR-012) — P1/P2: Support/Admin workflows.
-- Security elements (CAPTCHA, MFA) — P1: escalation & enrollment flows.
+## 1. Figma Specification
+**Platform**: Responsive (Web primary, Mobile secondary)
 
 ---
 
-## 2. UX Requirements
+## 2. Source References
 
-UXR Requirements Table
+### Primary Source
+| Document | Path | Purpose |
+|----------|------|---------|
+| Requirements | `.propel/context/docs/spec.md` | Personas, use cases, epics with UI impact flags; source of truth for auth features and flows |
 
+### Optional Sources
+| Document | Path | Purpose |
+|----------|------|---------|
+| Wireframes | `.propel/context/wireframes/` | Early layout drafts used to verify content structure |
+| Design Assets | `.propel/context/Design/` | Visual references for branding, icons, and illustration styles |
+
+### Related Documents
+| Document | Path | Purpose |
+|----------|------|---------|
+| Design System | `.propel/context/docs/designsystem.md` | Canonical tokens, component specs and naming conventions |
+| Security Guidelines | `.propel/context/docs/security.md` | Notes on messaging, non-revealing error text, lockout guidance |
+
+---
+
+## 3. UX Requirements
+
+### UXR Requirements Table
 | UXR-ID | Category | Requirement | Acceptance Criteria | Screens Affected |
 |--------|----------|-------------|---------------------|------------------|
-| UXR-001 | Performance | Auth flows must render next-screen redirect <= 2s (95th pct) | Measured 95th pct ≤ 2s; show loading skeleton >300ms | SCR-001, SCR-010 |
-| UXR-101 | Usability | Primary auth actions reachable within 3 taps/clicks | Task test: 90% users within 3 steps | SCR-001, SCR-002 |
-| UXR-102 | Usability | Primary CTA hierarchy: Sign in primary; auxiliary links secondary | Visual audit: primary CTA prominence & size | SCR-001 |
-| UXR-103 | Usability | Password field: visibility toggle; new-password strength meter | Elements present in UI; strength meter shows levels & suggestions | SCR-001, SCR-003 |
-| UXR-201 | Accessibility | All screens meet WCAG 2.2 AA | Axe/WAVE audit pass; keyboard & screen reader test pass | All screens |
-| UXR-202 | Accessibility | Error/success messages announced via aria-live | Screen reader reads messages when they appear | All screens with dynamic messages |
-| UXR-203 | Accessibility | Keyboard-only operation and visible focus states | Tab order logical; focus visible >=3:1 contrast | All interactive screens |
-| UXR-301 | Responsiveness | Support Mobile (390x844), Tablet (768x1024), Web (1440x1024) | Layouts adapt per breakpoints; no overlap/clipping | All screens |
-| UXR-401 | Visual Design | Use design tokens for all styling; no hard-coded values | Audit: tokens only in Figma styles | All components |
-| UXR-501 | Interaction | Immediate client-side validation, server fallback, button-disabled-on-submit | Validations fire on blur & submit; CTA disables while submitting | SCR-001..SCR-003 |
-| UXR-502 | Interaction | Loading indicators within CTAs and full-page skeletons for >300ms | Spinner in button & skeleton for main card | SCR-001, SCR-002, SCR-012 |
-| UXR-601 | Error Handling | Generic non-revealing error messages for auth failures | "Invalid credentials" used; no account enumeration | SCR-001, SCR-002 |
-| UXR-602 | Error Handling | Clear account-locked UX with next steps | Locked state shows duration/admin support CTA | SCR-005, SCR-011 |
-| UXR-701 | Security UX | Session-expired interstitial with re-auth prompt | Interstitial presented; ARIA focus set to heading | SCR-009 |
-| UXR-702 | Security UX | CAPTCHA and rate-limit escalation with contextual help | CAPTCHA appears after adaptive threshold; help link provided | SCR-008 |
-| UXR-801 | Admin UX | Admin unlock flow supports search, unlock, and audit confirmation | Admin task completion within 3 steps; audit event logged | SCR-011 |
-| UXR-901 | Localization | All user-facing strings must be localizable | All visible strings use tokenized strings in Figma | All screens |
-| UXR-902 | Motion Pref | Honor prefers-reduced-motion | Animations disabled/scaled per user preference | All animated components |
+| UXR-001 | Project-wide | Every use case in spec.md must map to a screen or a prototype flow | All UC-001..UC-008 referenced by SCR-001..SCR-012; prototype covers success/error paths | All SCR-XXX |
+| UXR-002 | Project-wide | Core tasks (login, forgot password, reset) reachable within 3 interactions from landing | Prototype shows ≤3 clicks/taps from entry to task completion in 90% of test runs | SCR-001, SCR-002, SCR-004 |
+| UXR-101 | Usability | Primary actions on auth screens must be visually prominent and first in tab order | Sign-in, Submit, Verify CTAs are highest visual weight and first tab stop; usability test success ≥90% | SCR-001, SCR-004, SCR-007 |
+| UXR-102 | Usability | Provide clear fallback CTAs (Forgot password, Contact support) adjacent to primary actions | Links/buttons present, accessible, and keyboard-focusable; documented in handoff | SCR-001, SCR-006 |
+| UXR-103 | Usability | Provide progressive disclosure for MFA enrollment and recovery codes | MFA enrollment includes stepwise UI: QR -> verify -> show recovery codes; confirmation state included | SCR-008 |
+| UXR-201 | Accessibility | All screens must meet WCAG 2.2 AA (text >=4.5:1, UI >=3:1) | Color contrast checks pass; focus states visible; verified in 06_Handoff | All SCR-XXX |
+| UXR-202 | Accessibility | Error and status messages must be announced to screen readers and accessible via aria-live | Error messages use polite/assertive live regions and associate with inputs via aria-describedby | SCR-001, SCR-002, SCR-004, SCR-007 |
+| UXR-301 | Responsiveness | Layout adapts for Mobile (320–414), Tablet (768), Desktop (1024+) breakpoints | Frames defined for mobile/tablet/web; Auto Layout behaviors documented; tests pass at listed widths | All SCR-XXX |
+| UXR-401 | Visual Design | Use design system tokens for all visual styles; no hard-coded colors/spacing | All components reference color.primary, spacing.base, typography.h1 etc; design tokens documented | 01_Foundations, All SCR-XXX |
+| UXR-402 | Visual Design | Focus outlines meet contrast and thickness requirements and are present for all interactive elements | Focus outline ≥3:1 against background, 2px minimum offset; documented on components | All interactive components |
+| UXR-501 | Interaction | Provide immediate visual feedback (spinner or skeleton) for actions that take >200ms | Loading states implemented for submit/verify actions with spinner or skeleton; spinner shown within 200ms | SCR-001, SCR-002, SCR-004, SCR-007 |
+| UXR-502 | Interaction | Disable primary submit while async request is pending to prevent double-submit | Submit button disabled and shows loading variant; duplicate requests prevented | SCR-001, SCR-002, SCR-004 |
+| UXR-601 | Error Handling | Authentication errors must be non-revealing and consistent to prevent account enumeration | Error copy: "Invalid credentials" or "Account is locked"; server returns 401/423; UI shows same messages for missing accounts | SCR-001, SCR-002, SCR-006 |
+| UXR-602 | Error Handling | Inline validation must highlight fields and provide actionable guidance | Field-level messages shown under inputs; inputs get aria-invalid and aria-describedby | SCR-001, SCR-004 |
+| UXR-603 | Error Handling | Lockout messaging must provide guidance and support options without exposing sensitive details | Lock screen/banners show lock reason, ETA and support contact; admins see unlock controls | SCR-006, SCR-011 |
+| UXR-701 | Interaction | CAPTCHA escalation UI must be accessible and have alternative keyboard flows | CAPTCHA modal/dedicated challenge supports keyboard navigation and has audio/accessible alternative where supported | SCR-001, SCR-011 |
+| UXR-801 | Interaction | MFA flows must show recovery-code generation and require user confirmation to store codes | Recovery codes are displayed once with "Download/Copy" CTA and confirmation checkbox before completing enrollment | SCR-008 |
 
-UXR Derivation Logic
-- Derived from Use Cases UC-001..UC-008 and Functional Requirements FR-001..FR-012.
-- Each UXR maps to specific screens and acceptance checks (visual & functional).
+### UXR Categories
+- Usability (1XX): Navigation, discoverability, efficiency
+- Accessibility (2XX): WCAG 2.2 AA compliance, ARIA/live regions
+- Responsiveness (3XX): Breakpoints and auto layout behaviors
+- Visual Design (4XX): Token adherence and visual consistency
+- Interaction (5XX): Loading feedback, disabling, micro-interactions
+- Error Handling (6XX): Non-revealing errors, lockout messaging
+
+### UXR Derivation Logic
+- Usability: Derived from UC-001..UC-008 success paths and success criteria in FRs
+- Accessibility: Derived from WCAG 2.2 AA and web-accessibility-standards in related guidelines
+- Responsiveness: Derived from figma-design-standards frame sizes and required platform support
+- Visual: Derived from designsystem.md token requirements and branding constraints
+- Interaction: Derived from flow complexity and security timing (e.g., token verification)
+- Error Handling: Derived from FR-002, FR-006, FR-007 and secure messaging constraints
+
+### UXR Numbering Convention
+- UXR-001 to UXR-099: Project-wide requirements
+- UXR-1XX: Usability requirements
+- UXR-2XX: Accessibility requirements
+- UXR-3XX: Responsiveness requirements
+- UXR-4XX: Visual design requirements
+- UXR-5XX: Interaction requirements
+- UXR-6XX: Error handling requirements
 
 ---
 
-## 3. Persona Analysis and User Journeys
-
-Personas Summary
+## 4. Personas Summary
 
 | Persona | Role | Primary Goals | Key Screens |
 |---------|------|---------------|-------------|
-| End User | Customer/Employee | Authenticate quickly, recover password, reach role dashboard | SCR-001, SCR-002, SCR-003, SCR-005, SCR-006, SCR-007 |
-| Admin/Support | Support Operator | Unlock accounts, view audit entries, assist users | SCR-011, SCR-012 |
-| Security/Compliance | Reviewer | Verify audit trails & non-revealing errors | SCR-012, SCR-011 |
-
-Persona Journeys (high-level)
-
-- End User — Happy Path
-  1. Entry: Landing or /login → SCR-001 Default.
-  2. Validate: Inline field validation; show errors as needed.
-  3. Submit: CTA disabled, spinner in button (SCR-001 Loading).
-  4. Success: Token issued; role redirect (SCR-010 Default) → dashboard.
-
-- End User — Forgot Password
-  1. From SCR-001 click "Forgot password" → SCR-002 Default.
-  2. Submit email → show generic confirmation (SCR-002 Default / Empty).
-  3. Receive email → follow token link → SCR-003 Default (Reset form).
-  4. Submit new password → SCR-004 Confirmation / Redirect to Login.
-
-- End User — Lockout
-  1. Multiple failed attempts → SCR-005 Error (Account locked).
-  2. Provide next steps: "Contact support" (SCR-011) or auto-unlock timer.
-
-- End User — MFA Enrollment
-  1. SCR-006 Default (QR + secret) with copy & download recovery codes.
-  2. Verify TOTP in SCR-007; success returns to protected flow.
-
-- Admin — Unlock Flow
-  1. SCR-012: Search user → open SCR-011 (Account detail).
-  2. Unlock → confirmation modal → audit logged.
+| End User | Customer / Employee | Authenticate quickly, recover password, reach role dashboard | Login, ForgotPassword, ResetPassword, MFAChallenge |
+| Privileged User | Admin/Privileged employee | Enroll MFA, use elevated features securely | MFA Enrollment, MFA Challenge, Login |
+| Support Operator | Admin/Support staff | Unlock accounts, view audit context, help users recover | Admin User Management, Unlock Modal, Audit Event Detail |
+| Security Analyst | Compliance/Security team | Verify audit trails and suspicious patterns | Audit Event Detail, Admin User Management |
 
 ---
 
-## 4. Information Architecture & Screen Inventory
+## 5. Information Architecture
 
-Site Map (high level)
-[Auth App]
-+-- Login (SCR-001)
-+-- Forgot Password (SCR-002)
-+-- Reset Password (SCR-003)
-+-- Reset Confirmation (SCR-004)
-+-- Account Locked (SCR-005)
-+-- MFA Enrollment (SCR-006)
-+-- MFA Verify (SCR-007)
-+-- CAPTCHA Challenge (SCR-008)
-+-- Logout / Session Expired (SCR-009)
-+-- Role Redirect Gate (SCR-010)
-+-- Admin Account Detail & Unlock (SCR-011)
-+-- Admin Audit Log (SCR-012)
+### Site Map
+[AuthService]
++-- Auth
+|   +-- Login
+|   +-- Forgot Password
+|   +-- Password Reset
+|   +-- MFA Enrollment
+|   +-- MFA Challenge
++-- Account
+|   +-- Account Locked (status page)
+|   +-- Logout
++-- Admin
+|   +-- User Management
+|   +-- Audit Events
 
-Screen Inventory
-
-| Screen ID | Name | Derived From | Personas | Priority | States |
-|-----------|------|--------------|----------|----------|--------|
-| SCR-001 | Login (Email + Password) | UC-001, UC-002, UC-003 | End User | P0 | Default, Loading, Empty, Error, Validation |
-| SCR-002 | Forgot Password Request | UC-005 | End User | P0 | Default, Loading, Empty (confirmation), Error, Validation |
-| SCR-003 | Reset Password (token) | UC-006 | End User | P0 | Default, Loading, Empty, Error, Validation |
-| SCR-004 | Reset Confirmation / Success | UC-006 | End User | P1 | Default, Loading, Empty, Error, Validation |
-| SCR-005 | Account Locked / Lockout Notice | UC-004 | End User | P0 | Default (locked view), Loading, Empty (info), Error, Validation |
-| SCR-006 | MFA Enrollment (QR + recovery) | FR-012 | End User | P1 | Default, Loading, Empty, Error, Validation |
-| SCR-007 | MFA Verification (TOTP) | FR-012 | End User | P1 | Default, Loading, Empty, Error, Validation |
-| SCR-008 | CAPTCHA Challenge | FR-011 | End User | P1 | Default (widget), Loading, Empty, Error, Validation |
-| SCR-009 | Logout / Session Expired | UC-007 | End User | P1 | Default (interstitial), Loading, Empty, Error, Validation |
-| SCR-010 | Role Redirect / Landing Gate | UC-008 | End User | P0 | Default, Loading, Empty, Error, Validation |
-| SCR-011 | Admin - Account Detail & Unlock | UC-004 | Admin | P1 | Default, Loading, Empty (no user), Error, Validation |
-| SCR-012 | Admin - Audit Log (list/filter) | FR-010 | Admin / Security | P2 | Default, Loading (skeleton table), Empty (no results), Error, Validation |
-
-Modal/Overlay Inventory
-- Confirm Unlock Modal — centered modal used by SCR-011 (fade + scale).
-- CAPTCHA Modal (if external widget requires overlay) — slide/fade variation.
-- Toasts/Alerts — top fixed, slide+fade.
+### Navigation Patterns
+| Pattern | Type | Platform Behavior |
+|---------|------|-------------------|
+| Primary Auth Nav | Header (or focused center card) | Web: centered auth card with top-left logo; Mobile: full-bleed card with back navigation |
+| Secondary Actions | Inline links under primary CTA | All: "Forgot password" and "Contact support" shown as secondary links |
+| Utility Nav | Top-right (when authenticated) | Desktop: profile menu with logout; Mobile: hamburger with account actions |
+| Admin Nav | Admin Sidebar | Desktop: persistent left sidebar; Mobile: collapsible drawer for admin pages |
 
 ---
 
-## 5. Screen Specifications (all 5 states per screen)
+## 6. Screen Inventory
 
-Notes on consistent design primitives
-- Container card width: mobile fill to safe area; desktop max-width 520px for auth card.
-- Spacing tokens used (see designsystem.md): base 8px scale.
-- Form fields: C/Inputs/TextField variants S/M; password field includes icon button trailing.
-- Focus outline: 2px offset, color token focus (>=3:1 contrast).
+### Screen List
+| Screen ID | Screen Name | Derived From | Personas Covered | Priority | States Required |
+|-----------|-------------|--------------|------------------|----------|-----------------|
+| SCR-001 | Login | UC-001, UC-002, UC-003 | End User, Privileged User | P0 | Login/Default, Login/Loading, Login/Empty, Login/Error, Login/Validation |
+| SCR-002 | Forgot Password (Request) | UC-005 | End User | P0 | ForgotPassword/Default, /Loading, /Empty, /Error, /Validation |
+| SCR-003 | Forgot Password Confirmation | UC-005 | End User | P0 | ForgotPasswordConfirmation/Default, /Loading, /Empty, /Error, /Validation |
+| SCR-004 | Password Reset (Set New Password) | UC-006 | End User | P0 | ResetPassword/Default, /Loading, /Empty, /Error, /Validation |
+| SCR-005 | Token Invalid / Expired | UC-006 | End User | P0 | TokenInvalid/Default, /Loading, /Empty, /Error, /Validation |
+| SCR-006 | Account Locked | UC-004 | End User, Support Operator | P0 | AccountLocked/Default, /Loading, /Empty, /Error, /Validation |
+| SCR-007 | MFA Challenge (TOTP) | FR-012 | Privileged User | P1 | MFAChallenge/Default, /Loading, /Empty, /Error, /Validation |
+| SCR-008 | MFA Enrollment (Provisioning) | FR-012 | Privileged User | P1 | MFAEnroll/Default, /Loading, /Empty, /Error, /Validation |
+| SCR-009 | Role Selection (Ambiguous) | UC-008 | End User | P1 | RoleSelect/Default, /Loading, /Empty, /Error, /Validation |
+| SCR-010 | Logout Confirmation | UC-007 | End User | P1 | LogoutConfirm/Default, /Loading, /Empty, /Error, /Validation |
+| SCR-011 | Admin — User Management (Unlock) | UC-004 (admin) | Support Operator, Admin | P1 | AdminUserMgmt/Default, /Loading, /Empty, /Error, /Validation |
+| SCR-012 | Admin — Audit Event Detail | FR-010 | Security Analyst, Admin | P2 | AuditEvents/Default, /Loading, /Empty, /Error, /Validation |
 
-SCR-001 — Login (Email + Password)
-- Default
-  - Elements: App logo, H1 "Sign in", subtitle, Email TextField (label, placeholder), Password TextField (visibility toggle), Remember me checkbox (optional), Primary Button "Sign in" (C/Button/Primary), Secondary link "Forgot password?", SSO/Other providers row (if configured), help link.
-  - Behavior: Primary CTA enabled only when fields non-empty and client-side validation passes.
-  - Keyboard: Enter submits; Tab order: Email → Password → Remember → Sign in → Forgot.
-- Loading
-  - Behavior: On submit, Primary button shows spinner + label "Signing in..."; full-card skeleton overlay if backend call >300ms (skeleton: avatar placeholder header and two row placeholders). Inputs disabled.
-- Empty
-  - Interpretation: Initial state (empty fields). Show helpful placeholder examples under inputs (aria-describedby).
-- Error
-  - Trigger: Server 401 / lockout.
-  - Variants:
-    - Invalid credentials: Top banner (error token) with "Invalid credentials" (aria-live="assertive"); field-level highlighting not used to avoid account enumeration.
-    - Account Locked: Banner "Account is locked until [time]" with "Contact support" CTA and "Unlock via admin" info.
-- Validation
-  - Field-level inline errors: Required field messages (e.g., "Email is required"); email-format "Enter a valid email".
-  - Errors appear on blur and on submit (aria-live polite for inline).
-  - Password visibility toggle and strength meter appear per UXR-103 for password setting only (on Reset form).
+### Priority Legend
+- P0: Critical path (must-have for MVP)
+- P1: Core functionality (high priority)
+- P2: Important features (medium priority)
+- P3: Nice-to-have (low priority)
 
-SCR-002 — Forgot Password Request
-- Default
-  - Elements: H1 "Reset your password", Email TextField, Primary CTA "Send reset link", Secondary "Back to sign in".
-  - UX: After submit show generic confirmation (Empty state) regardless of existence.
-- Loading
-  - CTA shows spinner; inputs disabled.
-- Empty
-  - Confirmation: Illustration + message "If an account exists, a reset email has been sent" + CTA "Back to sign in".
-- Error
-  - Email send failure: Banner "We couldn't send email right now. Try again." and "Retry" CTA. Provide help link for support.
-- Validation
-  - Inline field: required / email format errors.
+### Screen-to-Persona Coverage Matrix
+| Screen | End User | Privileged User | Support Operator | Security Analyst | Notes |
+|--------|---------:|----------------:|-----------------:|-----------------:|-------|
+| Login | Primary | Primary | Secondary | - | Entry point for all users |
+| Forgot Password | Primary | Primary | - | - | Self-service recovery |
+| Reset Password | Primary | Primary | - | - | Token-based flow |
+| Account Locked | Primary | - | Primary | - | Supportable by admin |
+| MFA Enroll | - | Primary | - | - | Privileged users only |
+| Admin User Management | - | Secondary | Primary | Secondary | Admin consoles not part of public auth UI |
+| Audit Events | - | - | Secondary | Primary | Compliance-focused screens |
 
-SCR-003 — Reset Password (token)
-- Default
-  - Elements: H1 "Create a new password", New Password field (strength meter), Confirm Password field, Primary CTA "Set new password".
-  - Behavior: Strength meter uses three levels (Weak/Medium/Strong) with suggestions.
-- Loading
-  - Button spinner; skeleton for main content if server validating token.
-- Empty
-  - If token already used/expired — show Empty/Info view with CTA "Request new link".
-- Error
-  - Invalid token: Card with error message and CTA to request new reset.
-- Validation
-  - Password mismatch inline, weak password guidance; ARIA mapping to inputs via aria-describedby.
-
-SCR-004 — Reset Confirmation / Success
-- Default
-  - Message: "Your password has been reset. You may now sign in." CTA "Back to sign in".
-- Loading
-  - On finalizing update, spinner in CTA.
-- Empty / Error / Validation states included similar to above.
-
-SCR-005 — Account Locked / Lockout Notice
-- Default (locked view)
-  - Banner modal-like card describing lock reason, lock expiry if available, next steps (contact support link), link to unlock request modal.
-- Loading
-  - If checking unlock status, show spinner.
-- Empty
-  - If no additional support available, provide help contact.
-- Error
-  - If admin unlock fails, show error with retry.
-- Validation
-  - If user tries to submit unlock self-service form, inline validation.
-
-SCR-006 — MFA Enrollment (QR + Recovery)
-- Default
-  - QR Graphic area, secret key displayed (masked with reveal), copy/download recovery codes, Primary CTA "Verify" to prompt code entry (SCR-007).
-- Loading
-  - QR generation spinner.
-- Empty
-  - If service cannot provision, show info and fallback instructions.
-- Error
-  - QR verify failure: inline error "Code didn't match".
-- Validation
-  - TOTP field validation (6-digit numeric, aria descriptions).
-
-SCR-007 — MFA Verification (TOTP)
-- Default
-  - Input for TOTP code, Primary CTA "Verify", resend link for backup codes.
-- Loading
-  - CTA spinner during verification.
-- Empty
-  - After successful verify show success card and return to landing.
-- Error / Validation
-  - Code invalid: inline error + increment failed_attempts per FR-006.
-
-SCR-008 — CAPTCHA Challenge
-- Default
-  - Embedded widget (C/Feedback/CAPTCHA). Provide accessible label and fallback description. If external (reCAPTCHA), use an overlay placeholder with link to provider.
-- Loading
-  - Widget loading skeleton.
-- Empty
-  - If no challenge available, fallback to additional friction (email verify).
-- Error
-  - Challenge failure: show retry and support CTA.
-- Validation
-  - Missing verification: inline prompt.
-
-SCR-009 — Logout / Session Expired
-- Default
-  - Session-expired interstitial with CTA "Sign in again". ARIA focus set to H1.
-- Loading
-  - While re-authenticating, spinner.
-- Empty / Error / Validation consistent with spec.
-
-SCR-010 — Role Redirect / Landing Gate
-- Default
-  - Transitional view: show brief message "Redirecting to [role] dashboard" with skeletons; fallback link to dashboard.
-- Loading
-  - Show progress; handle mapping failure gracefully.
-- Empty
-  - If no mapped role, show guidance for admin contact (HTTP 403 case).
-- Error
-  - Role resolution failure: show error and support CTA.
-- Validation
-  - Role mapping mismatch fallback.
-
-SCR-011 — Admin - Account Detail & Unlock
-- Default
-  - Search input, account detail card (status, failed_attempts, locked_until), Unlock button (confirm modal), audit event preview.
-- Loading
-  - Skeleton table and card placeholders.
-- Empty
-  - No results: illustration + help text.
-- Error
-  - API error: banner + retry.
-- Validation
-  - Search validation, unlock confirmation text validation (must type 'UNLOCK' for destructive action if configured).
-
-SCR-012 — Admin - Audit Log
-- Default
-  - Table (C/Content/Table) with filters, date range picker, search, pagination. Rows: timestamp, event_type, user_id (hashed/obfuscated where needed), IP, outcome.
-- Loading
-  - Skeleton rows.
-- Empty
-  - "No events found" with timeframe controls.
-- Error
-  - Fetch error: banner + retry.
-- Validation
-  - Filter validation (date range rules).
-
-State Naming & Figma Frames
-- Frame names per figma-design-standards: e.g., Login/Default, Login/Loading, Login/Empty, Login/Error, Login/Validation.
-- Export naming per standard: <AppName>__<Platform>__<ScreenName>__<State>__v1.jpg.
+### Modal/Overlay Inventory
+| Name | Type | Trigger | Parent Screen(s) | Priority |
+|------|------|---------|-----------------|----------|
+| Login Error Toast | Toast | Failed login | Login | P0 |
+| Confirm Logout | Modal | Click "Logout" | Nav/Authenticated pages | P1 |
+| Unlock Confirmation | Dialog | Admin unlock action | Admin User Management | P0 |
+| CAPTCHA Challenge | Modal / Inline | Rate-limit/CAPTCHA escalation | Login | P1 |
+| Recovery Codes Download | Modal | MFA enrollment complete | MFA Enrollment | P1 |
 
 ---
 
-## 6. User Flows and Navigation
+## 7. Content & Tone
 
-Flow: FL-001 — Sign In (UC-001)
-1. Entry: SCR-001 Default.
-2. Input validation (client-side).
-3. Submit → SCR-001 Loading (CTA spinner).
-4. Outcomes:
-   - Success → SCR-010 Default (Role redirect) → dashboard.
-   - Invalid credentials → SCR-001 Error (Invalid credentials).
-   - Reached failed threshold → SCR-005 Default (Account Locked) → Admin unlock or auto-unlock.
+### Voice & Tone
+- Overall Tone: Professional and supportive — secure, concise, and non-blaming.
+- Error Messages: Clear, actionable, non-revealing. Example: "Invalid credentials. Please try again or use Forgot password."
+- Empty States: Encouraging and instructive with clear CTAs (e.g., "No recent activity. Go to Dashboard.")
+- Success Messages: Brief and actionable (e.g., "Password changed. Sign in with your new password.")
 
-Flow: FL-002 — Forgot / Reset (UC-005, UC-006)
-1. Entry: SCR-001 click Forgot → SCR-002 Default.
-2. Submit email → SCR-002 Loading.
-3. Server sends email → SCR-002 Empty confirmation.
-4. User opens email → SCR-003 Default via token link.
-5. Submit new password → SCR-004 Default success.
-
-Flow: FL-003 — MFA Enrollment & Verify (FR-012)
-1. Entry: After login or profile settings → SCR-006 Default.
-2. User scans QR, copies secret or download recovery codes → Verify (SCR-007).
-3. On success, MFA enforced per role.
-
-Flow: FL-004 — CAPTCHA Escalation (FR-011)
-1. Detect suspicious pattern → show SCR-008 Default (CAPTCHA).
-2. User completes widget → resume flow.
-
-Flow: FL-005 — Admin Unlock & Audit (UC-004, FR-010)
-1. Admin enters SCR-012, filters logs → locate user → open SCR-011.
-2. Unlock via confirm modal → success and audit record created.
-
-Prototype Entry Points
-- /login
-- /forgot-password
-- /reset?token=
-- /admin/audit
-
-Prototype Requirements
-- At least one validation flow (Login with errors).
-- One empty state flow (no audit logs).
-- One error retry flow (email send failure -> retry -> success).
+### Content Guidelines
+- Headings: Sentence case for clarity (e.g., "Sign in to your account")
+- CTAs: Action-oriented, specific verbs (e.g., "Sign in", "Send reset email", "Verify code")
+- Labels: Short, descriptive (e.g., "Email address", "Password", "Remember this device")
+- Placeholder Text: Helpful examples (e.g., "name@example.com"); avoid lorem ipsum in final designs
 
 ---
 
-## 7. Component Mapping
+## 8. Data & Edge Cases
 
-Figma Page & Component Organization
-- 00_Cover: metadata
-- 01_Foundations: tokens
-- 02_Components: C/Actions, C/Inputs, C/Navigation, C/Content, C/Feedback
-- 03_Patterns: Auth patterns, error/empty/loading patterns
-- 04_Screens: all screen frames with states
-- 05_Prototype: flows
-- 06_Handoff: dev notes
+### Data Scenarios
+| Scenario | Description | Handling |
+|----------|-------------|----------|
+| No Data | User has no account history or items | Show empty state with instructions or CTA (e.g., "Create account" if applicable) |
+| First Use | New user with no history | Provide contextual helper text and progressive disclosure (MFA opt-in shown but optional) |
+| Large Data | Admin audit results >1000 records | Provide pagination, filters, and export; use virtualization for performance |
+| Slow Connection | Network >3s for auth calls | Show skeletons or spinner and informative message "Checking credentials..." |
+| Offline | No network available | Show offline state and retry option; prevent sensitive actions until online |
 
-Key Components & Variants (must exist)
-- C/Actions/Button
-  - Properties: Type (Primary, Secondary, Ghost), Size (S/M/L), State (Default/Hover/Focus/Active/Disabled/Loading), Icon (None/Leading/Trailing)
-- C/Inputs/TextField
-  - Variants: single-line, password (with visibility toggle), with prefix/suffix, state variants including error & success.
-- C/Feedback/Banner
-  - Types: Info, Success, Error, Warning. Must have aria-live variants.
-- C/Feedback/Skeleton
-  - Variants per content type: card, table row, form row.
-- C/Feedback/Modal
-  - Variants: Confirm, Informational; animation fade+scale.
-- C/Content/Table
-  - Variants: Default, Empty, Loading (skeleton rows). Column props and row actions (unlock).
-- C/Feedback/CAPTCHA
-  - Widget placeholder for integrations (reCAPTCHA, hCaptcha); include accessible label and fallback UI.
-- C/Security/MFAEnrollment
-  - QR container, secret copy, recovery code list (download/copy).
-- C/Forms/PasswordStrength
-  - Levels and messages; accessible text alternatives.
-
-Component Properties Checklist
-- Each component must define variant properties from figma-design-standards (Type, Size, State, Icon).
-- All interactive components must document focus order and keyboard interactions in 06_Handoff.
-
-Component-to-Screen Mapping (examples)
-- Login: C/Inputs/TextField x2, C/Actions/Button Primary, C/Feedback/Banner.
-- Reset Password: C/Inputs/TextField (password), C/Forms/PasswordStrength.
-- Admin Audit: C/Content/Table, C/Actions/Button Secondary, C/Feedback/Modal (unlock confirm).
+### Edge Cases
+| Case | Screen(s) Affected | Solution |
+|------|-------------------|----------|
+| Long email/username strings | Login, Admin lists | Truncate with ellipses, provide full value on hover/clipboard copy |
+| Missing avatar/image | Admin lists, user profiles | Fallback avatar with initials SVG |
+| Password policy violations | ResetPassword | Inline validation with policy checklist and strength meter |
+| Token reuse or replay | ResetPassword | Server-side single-use enforcement; UI shows token invalid/expired screen |
+| Concurrent unlock attempts | Admin User Management | Optimistic UI with server confirmation and conflict message if already unlocked |
 
 ---
 
-## 8. Interaction Patterns and Micro-animations
+## 9. Branding & Visual Direction
+*See `.propel/context/docs/designsystem.md` for tokens and full brand assets.*
 
-Motion Principles
-- Durations: 150ms (micro-interactions, hover), 200-300ms (modals, skeleton reveal).
-- Easing: ease-out for entrances, ease-in-out for toggles.
-- Motion reduction: Honor prefers-reduced-motion: reduce animations to fade-only, or instant state change.
-- Feedback latency: Immediate for client-side; server-loading patterns after 300ms show skeletons; button-level spinners for local actions.
-
-Micro-interactions
-- Button press: 150ms depressed state with subtle scale (0.98) + opacity change.
-- Input focus: 2px outline with shadow token (elevation 1) and color token focus.
-- Banner in/out: slide + fade 200ms.
-- Modal: scale from 0.96 → 1 and fade-in 200ms (prefers-reduced-motion alternate: fade only).
-- Skeleton shimmer: subtle linear gradient (disabled in reduced-motion).
-
-Interaction Patterns
-- Button-disabled-on-submit prevents double submits.
-- Inline validation: on blur show errors; on submit show all relevant errors.
-- Error banners: dismissible, appear at top of card and announced (aria-live="assertive").
-- Toasts: used for transient success messages; auto-dismiss 4s, focusable when opened via keyboard.
-
-Prototype Interactions to Implement
-- Login submit with invalid credentials → Error banner (aria-live assertive) + keyboard focus stays on Email field.
-- Forgot password submit → Confirmation empty state flow.
-- Admin unlock → modal confirmation with typed confirmation if configured.
+- Logo: Primary wordmark + icon lock symbol; path: `.propel/context/Design/logo/logo_primary.svg` [TO BE UPDATED]
+- Icon Style: Filled glyphs with 2px stroke where applicable, consistent 16/24/32px grid
+- Illustration Style: Minimal flat illustrations for empty states; single-color line illustrations for error states
+- Photography Style: Not used on auth screens; if used in admin dashboards, prefer high-clarity, business-focused imagery
 
 ---
 
-## 9. Accessibility Requirements (WCAG Compliance)
+## 10. Component Specifications
 
-WCAG Baseline: 2.2 Level AA for all screens and components.
+### Component Library Reference
+**Source**: `.propel/context/docs/designsystem.md` (Component Specifications section)
 
-Key Requirements & Implementation Notes
-- Contrast: Text ≥ 4.5:1; large text ≥ 3:1; UI components ≥ 3:1 when needed. Verify with contrast analyzer.
-- Focus: Visible focus indicator for all interactive controls (>=3:1 contrast with adjacent backgrounds).
-- Labels: All inputs have associated labels (visible or aria-label). Use aria-describedby for helper/error text.
-- Live regions: Error banners use aria-live="assertive"; inline errors use aria-live="polite".
-- Keyboard: Full keyboard operability. Modal focus trap (Escape closes modal), but ensure Escape is documented in 06_Handoff.
-- Touch targets: Minimum 44x44px tappable area on mobile.
-- Screen reader: Semantic structure: <main>, <form>, <nav> labels in handoff. Provide ARIA suggestions for each component.
-- Forms: Required fields marked and programmatically indicated (aria-required). Error messages linked via aria-describedby to inputs.
-- Images: Alt text for logos and meaningful images; decorative images alt="" or aria-hidden.
-- Motion: Respect prefers-reduced-motion; provide accessible alternatives for critical feedback.
-- Color independence: Do not rely on color alone for error states; combine with icons/text.
-- Language & Localization: Directionality and text expansion considered.
+### Required Components per Screen
+| Screen ID | Components Required | Notes |
+|-----------|---------------------|-------|
+| SCR-001 | C/Inputs/TextField (email), C/Inputs/TextField (password), C/Actions/Button (Primary), Link | Login form; show forgot-password link |
+| SCR-002 | C/Inputs/TextField (email), C/Actions/Button (Primary) | Generic confirmation flow on submit |
+| SCR-004 | C/Inputs/TextField (new password), C/Inputs/TextField (confirm password), PasswordPolicyChecklist, C/Actions/Button (Primary) | Password strength & policy inline |
+| SCR-007 | C/Inputs/TextField (OTP), C/Actions/Button (Primary), C/Actions/Button (Secondary) | Retry/resend and "Use recovery code" options |
+| SCR-008 | C/Image/QRCode, C/Inputs/TextField (verification), RecoveryCodesPanel, C/Actions/Button (Primary) | QR SVG must scale and be accessible |
+| SCR-011 | C/Table/UserList, C/Actions/Button (Unlock), AdminToolbar | Bulk actions and search |
 
-Accessibility Annotations (to add in Figma)
-- Focus order notes on each screen.
-- ARIA role and label suggestions in component instances.
-- Heading hierarchy and landmark annotations.
+### Component Summary
+| Category | Components | Variants |
+|----------|------------|----------|
+| Actions | C/Actions/Button, C/Actions/IconButton, C/Actions/Link | Primary/Secondary/Tertiary, Sizes S/M/L, States |
+| Inputs | C/Inputs/TextField, C/Inputs/PasswordField, C/Inputs/Checkbox | States: Default/Focus/Error/Disabled/Loading |
+| Navigation | C/Navigation/Header, C/Navigation/Sidebar | Desktop & mobile variants |
+| Content | C/Content/Card, C/Content/Table, C/Content/ListItem | Row/Expanded/Compact variants |
+| Feedback | C/Feedback/Modal, C/Feedback/Toast, C/Feedback/Skeleton | Variants per use case |
 
-Testing & Acceptance
-- Axe and Accessibility Insights passes for AA level on all default screens.
-- Manual keyboard and NVDA/VoiceOver walkthroughs for critical flows (Login, Reset, MFA, Admin unlock).
-
----
-
-## 10. Responsive Design Breakpoints
-
-Baseline Frames (per figma-design-standards)
-- Mobile: 390 x 844 (iPhone 14 baseline)
-- Tablet: 768 x 1024 (iPad portrait)
-- Web: 1440 x 1024 (Desktop baseline)
-
-Layout Rules
-- Grid: 12-column responsive grid on web (gutter 24/32 per breakpoint); mobile single column.
-- Auth card: centered, max-width 520px on desktop, full-bleed with safe padding on mobile.
-- Auto Layout: All frames use Auto Layout; nesting limited to 4 levels.
-
-Behavior Per Breakpoint
-- Mobile: Stack vertical, use bottom-anchored CTAs where appropriate, simplify visuals (hide extra help text behind "?" links).
-- Tablet: Two-column patterns allowed for Admin tables (filters left, results right).
-- Desktop: Full table with columns, multi-column forms supported.
-
-Responsive Token Pitfalls
-- Don’t change token values per breakpoint—apply different component layouts while reusing tokens.
+### Component Constraints
+- Use only components defined in designsystem.md (C/<Category>/<Name>)
+- All components must support states: Default, Hover, Focus, Active, Disabled, Loading
+- Auto Layout must be used for components with documented resize behavior (Hug/Fill)
+- Touch targets >=44x44px on mobile for actionable elements
+- All focusable components must expose focus-visible styles and ARIA attributes where appropriate
 
 ---
 
-## 11. Prototype & Export Requirements
+## 11. Prototype Flows
 
-Prototype Flows (must be wired)
-- FL-001, FL-002, FL-003 (see User Flows).
-- Include one validation flow, one empty-state flow, one error-retry flow.
+### Flow: FL-001 - User Login (Happy Path)
+**Flow ID**: FL-001  
+**Derived From**: UC-001  
+**Personas Covered**: End User, Privileged User  
+**Description**: Enter credentials, authenticate, receive token, redirect to role-specific dashboard.  
 
-Export Guidelines
-- JPG exports: Quality 85%, 2x scale for mobile, 2x for web; sRGB color profile.
-- Filenames per standard: <AppName>__<Platform>__<ScreenName>__<State>__v1.jpg.
-- Produce export_manifest.md in 06_Handoff listing all exported screens with timestamps.
+#### Flow Sequence
+1. Entry: Login/Default  
+   - Trigger: User enters email and password and clicks "Sign in"  
+   - Action: Client-side validation passes  
+   |
+   v
+2. Login/Loading  
+   - Action: POST /auth/login; show button loading state + skeleton for redirect processing  
+   |
+   v
+3. Decision Point: Auth success?  
+   +-- Success -> Redirect to role-specific Dashboard (external to auth file)  
+   +-- Failure -> Login/Error (show "Invalid credentials") and increment failed_attempts  
 
-Handoff Notes
-- 06_Handoff to include token usage guidelines, component props mapping, responsive behavior, accessibility notes, and code mapping suggestions.
-
----
-
-## 12. Quality Checklist (Pre-Export)
-
-- [ ] All screens include Default/Loading/Empty/Error/Validation frames.
-- [ ] Components use tokens only (no literals).
-- [ ] Contrast checks applied and pass WCAG AA.
-- [ ] Focus states defined and visible for all interactive elements.
-- [ ] Touch targets >=44x44px on mobile frames.
-- [ ] Prototype flows wired and include required validation/empty/error flows.
-- [ ] Naming conventions followed (C/..., Screen/State).
-- [ ] Export manifest prepared.
-
----
-
-## 13. Mapping to Personas & Acceptance Flow Matrix
-
-Sample Screen → Persona Coverage
-- SCR-001 (Login): End User primary, Admin secondary (admin may sign-in).
-- SCR-011 (Admin Unlock): Admin primary only.
-- SCR-012 (Audit Log): Admin & Security primary.
-
-UX Acceptance Mapping
-- UXR-201 (Accessibility) → All screens must pass accessibility acceptance (manual & automated).
-- UXR-501 (Interaction) → Login & Reset must demonstrate client validation and server fallback in prototype.
+#### Required Interactions
+- Submit button disabled while request pending
+- Error message announced via aria-live
 
 ---
 
-## 14. Assumptions, Open Questions, & Next Steps
+### Flow: FL-002 - Forgot Password Request & Confirmation
+**Flow ID**: FL-002  
+**Derived From**: UC-005  
+**Personas Covered**: End User  
 
-Assumptions
-- External Email Service is available and supports TLS.
-- SSO/OIDC is out-of-scope until FR-013 clarified.
-- CAPTCHA provider config provided by infra.
+#### Flow Sequence
+1. Entry: Login/Default -> click "Forgot password"  
+2. ForgotPassword/Default -> Enter email -> click "Send reset email"  
+   - Show validation for empty/invalid email  
+3. ForgotPassword/Loading -> show spinner on submit  
+4. ForgotPasswordConfirmation/Default -> show generic message "If an account exists..." with CTA "Return to sign in"  
+Decision: Email delivery success not disclosed to user; Admin logs delivery status
 
-Open Questions (flagged for product/security)
-- FR-013 SSO details: which providers and claim mappings? [UNCLEAR]
-- Admin unlock UX: require typed confirmation or simple confirm? (Implement simple confirm; add typed confirmation as configurable pattern.)
-- Token storage strategy for client (HttpOnly cookie vs in-memory): document preferred strategy in Handoff.
+#### Required Interactions
+- Generic response to avoid account enumeration
+- Email delivery logged in backend (not exposed)
 
-Next Steps
-1. Create Figma file with 6 pages and seed tokens in 01_Foundations.
-2. Build component library in 02_Components following naming & variant rules.
-3. Implement patterns and wire FL-001..FL-005 in prototype page.
-4. Run accessibility checks and iterate.
+---
 
-End of Figma Design Specification.
+### Flow: FL-003 - Reset Password via Token
+**Flow ID**: FL-003  
+**Derived From**: UC-006  
+**Personas Covered**: End User  
+
+#### Flow Sequence
+1. Entry: ResetPassword/Default via link with token  
+2. ResetPassword/Validation -> Client validates password policy in real time  
+3. ResetPassword/Loading -> POST /auth/reset-password (token, new password)  
+4. Decision: Token valid?  
+   +-- Yes -> show success message and link to Login/Default  
+   +-- No -> TokenInvalid/Default with CTA "Request a new reset"  
+
+#### Required Interactions
+- Password policy checklist updates live
+- Token validation shows explicit invalid/expired state
+
+---
+
+### Flow: FL-004 - Account Lockout and Admin Unlock
+**Flow ID**: FL-004  
+**Derived From**: UC-004  
+**Personas Covered**: End User, Support Operator  
+
+#### Flow Sequence
+1. Entry: Repeated login failures -> Login/Error shows lock threshold reached  
+2. AccountLocked/Default visible on next login attempt (or banner on Login/Default)  
+3. Admin: AdminUserMgmt/Default -> select user -> Unlock Confirmation dialog -> API unlock -> success toast  
+Decision: Auto-unlock after configured duration vs manual unlock
+
+#### Required Interactions
+- Lock banner with ETA and support contact
+- Admin unlock confirmation with audit link
+
+---
+
+### Flow: FL-005 - MFA Enrollment & Challenge
+**Flow ID**: FL-005  
+**Derived From**: FR-012 / UC-001 (privileged)  
+**Personas Covered**: Privileged User  
+
+#### Flow Sequence
+1. Entry: MFAEnroll/Default -> show QR and secret key (masked)  
+2. User scans QR with authenticator -> enters code in Verify input -> click "Verify"  
+3. MFAEnroll/Loading -> verify TOTP -> Decision: Verified?  
+   +-- Yes -> show RecoveryCodesPanel (Download/Copy) and completion confirmation  
+   +-- No -> MFAEnroll/Error with guidance  
+4. Subsequent login triggers MFAChallenge/Default to enter TOTP
+
+#### Required Interactions
+- Recovery codes visible once with "I stored these codes" confirmation before finish
+- QR image has alt text and accessible fallback secret
+
+---
+
+## 12. Export Requirements
+
+### JPG Export Settings
+| Setting | Value |
+|---------|-------|
+| Format | JPG |
+| Quality | High (85%) |
+| Scale - Mobile | 2x |
+| Scale - Web | 2x |
+| Color Profile | sRGB |
+
+### Export Naming Convention
+`AuthService__<Platform>__<ScreenName>__<State>__v<Version>.jpg`
+
+### Export Manifest
+| Screen | State | Platform | Filename |
+|--------|-------|----------|----------|
+| Login | Default | Mobile | AuthService__Mobile__Login__Default__v1.jpg |
+| Login | Loading | Mobile | AuthService__Mobile__Login__Loading__v1.jpg |
+| Login | Error | Mobile | AuthService__Mobile__Login__Error__v1.jpg |
+| ForgotPassword | Default | Web | AuthService__Web__ForgotPassword__Default__v1.jpg |
+| ResetPassword | Default | Web | AuthService__Web__ResetPassword__Default__v1.jpg |
+| MFAEnroll | Default | Web | AuthService__Web__MFAEnroll__Default__v1.jpg |
+| AdminUserMgmt | Default | Web | AuthService__Web__AdminUserMgmt__Default__v1.jpg |
+
+### Total Export Count
+- Screens: 12
+- States per screen: 5
+- Total JPGs: 12 * 5 = 60
+
+---
+
+## 13. Figma File Structure
+
+```
+AuthService Figma File
++-- 00_Cover
+|   +-- Project info, version, stakeholders
++-- 01_Foundations
+|   +-- color.primary, color.semantic, neutral 50-900 (Light + Dark)
+|   +-- typography scale (H1→Caption)
+|   +-- spacing tokens (4,8,12,16,20,24,32,40)
+|   +-- radius tokens
+|   +-- elevation/shadows
+|   +-- grid definitions for Mobile/Tablet/Web
++-- 02_Components
+|   +-- C/Actions/Button (Primary/Secondary/Tertiary)
+|   +-- C/Inputs/TextField, PasswordField, Checkbox
+|   +-- C/Navigation/Header, Sidebar
+|   +-- C/Content/Card, Table, ListItem
+|   +-- C/Feedback/Modal, Toast, Skeleton
++-- 03_Patterns
+|   +-- Auth form pattern (Login, Forgot, Reset)
+|   +-- MFA pattern (QR, verify, recovery codes)
+|   +-- Error/Empty/Loading patterns
++-- 04_Screens
+|   +-- Login/Default, Login/Loading, Login/Empty, Login/Error, Login/Validation
+|   +-- ForgotPassword/Default, ... (all screens and states)
++-- 05_Prototype
+|   +-- Flow FL-001: Login
+|   +-- Flow FL-002: Forgot Password
+|   +-- Flow FL-005: MFA Enrollment and Challenge
++-- 06_Handoff
+    +-- Token usage rules
+    +-- Component guidelines and code mappings
+    +-- Responsive specs and breakpoints
+    +-- Edge cases and accessibility notes
+```
+
+---
+
+## 14. Quality Checklist
+
+### Pre-Export Validation
+- [ ] All screens have required states (Default/Loading/Empty/Error/Validation)
+- [ ] All components reference design tokens (no hard-coded values)
+- [ ] Color contrast meets WCAG AA (>=4.5:1 text, >=3:1 UI)
+- [ ] Focus states defined for all interactive elements
+- [ ] Touch targets >= 44x44px (mobile)
+- [ ] Prototype flows wired and functional (FL-001 .. FL-005)
+- [ ] Naming conventions for components and screens followed
+- [ ] Export manifest complete
+
+### Post-Generation
+- [ ] designsystem.md updated with Figma references
+- [ ] Export manifest generated and files exported per naming convention
+- [ ] Handoff documentation includes token usage rules and code mappings
+- [ ] Accessibility annotations included: focus order, ARIA suggestions, heading hierarchy
+
+---
+
+Notes & Next Steps:
+- Add Figma node links and replace "node-id=TBD" placeholders in 02_Components and 04_Screens once frames are created.
+- Ensure admin console screens (SCR-011, SCR-012) include data privacy masking and audit-link affordances.
+- Schedule accessibility review pass with Accessibility Insights and include findings in 06_Handoff.
