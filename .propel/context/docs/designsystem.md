@@ -1,285 +1,299 @@
 # Design System
 
----
-post_title: "Authentication Design System"
-author1: "Senior Product Designer"
-post_slug: "auth-design-system"
-microsoft_alias: "designer.alias"
-featured_image: ""
-categories: ["design-system"]
-tags: ["tokens","components","accessibility"]
-ai_note: "AI-assisted: token mapping and component templates"
-summary: "Design system tokens and component specifications for Authentication feature: color, typography, spacing, radius, elevation, motion, component variants, brand usage, accessibility guidelines and examples."
-post_date: "2026-04-07"
----
+Purpose
+This design system defines the tokens, components, patterns, accessibility rules, and usage guidance used by the Authentication UI described in the Figma Design Specification. It is intended for designers and engineers to implement consistent, accessible, and maintainable UI.
 
 ## 1. Design Tokens
 
-Token hierarchy follows primitive → semantic → component tokens. Use variables in Figma and export to code.
+Token Principles
+- Hierarchy: Primitive → Semantic → Component tokens.
+- All tokens defined as named styles in Figma and exported to code variables (e.g., CSS vars).
+- Light & Dark variants must be present; dark parity required.
 
-Primitive Colors (Light mode)
-- color.blue.500: #2563EB
-- color.green.500: #10B981
-- color.red.500: #EF4444
-- color.yellow.500: #F59E0B
-- neutral.900: #0F172A
-- neutral.800: #111827
-- neutral.700: #374151
-- neutral.500: #6B7280
-- neutral.300: #D1D5DB
-- neutral.100: #F3F4F6
-- white: #FFFFFF
+Color Tokens (selected)
+- Primitive
+  - color.blue.500: #0A66C2
+  - neutral.900: #111827
+  - neutral.700: #374151
+  - neutral.300: #D1D5DB
+  - neutral.100: #F3F4F6
+  - success.500: #16A34A
+  - warning.500: #F59E0B
+  - danger.500: #DC2626
+- Semantic
+  - color.primary: {color.blue.500}
+  - color.text.primary: {neutral.900}
+  - color.text.onPrimary: #FFFFFF
+  - color.surface: {neutral.100}
+  - color.surface.alt: {neutral.300}
+  - color.border: {neutral.300}
+  - color.success: {success.500}
+  - color.warning: {warning.500}
+  - color.error: {danger.500}
+- Component
+  - button.primary.background: {color.primary}
+  - button.primary.text: {color.text.onPrimary}
+  - input.background: #FFFFFF (light) / #1F2937 (dark)
+  - focus.outline: color.blue.500 (with opacity for shadow)
 
-Dark mode primitives (mapped)
-- neutralDark.900: #000000
-- neutralDark.700: #111827
-- neutralDark.300: #9CA3AF
+Light & Dark mapping
+- Provide counterpart tokens for dark mode (e.g., color.text.primary → neutral.100 in dark mode).
+- All contrast must meet WCAG AA.
 
-Semantic tokens
-- color.primary: {color.blue.500} — Primary CTAs, active states
-- color.success: {color.green.500}
-- color.error: {color.red.500}
-- color.warning: {color.yellow.500}
-- color.surface: {white}
-- color.onSurface: {neutral.900}
-- color.muted: {neutral.500}
-- color.input.bg: {neutral.100}
-- color.input.border: {neutral.300}
-- color.focus: #60A5FA (accessible focus ring)
-
-Component tokens (examples)
-- button.primary.background: {color.primary}
-- button.primary.text: {white}
-- input.background: {color.input.bg}
-- banner.error.background: #FFF1F2
-- banner.error.border: {color.error}
-
-Typography
-- Family: System stack for auth flows (to maximize accessibility): "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial"
-  - Note: Product-level decision may substitute brand fonts; system fonts used to ensure legibility in early releases.
-- Scale:
-  - H1: 28px / 36px line-height / weight 600
+Typography Tokens
+- Base font family: "Inter UI" is allowed; product rule (ui-ux-design-standards) suggested distinct fonts — however authentication flows require legibility and broad platform availability. Use system + accessible fonts:
+  - font.family.primary: "IBM Plex Sans", system-fallbacks
+- Scale
+  - H1: 28px / 36px line-height / 600
   - H2: 22px / 28px / 600
   - H3: 18px / 24px / 600
-  - Body: 16px / 24px / 400
-  - Small: 14px / 20px / 400
+  - Body1: 16px / 24px / 400
+  - Body2: 14px / 20px / 400
   - Caption: 12px / 16px / 400
-- Accessibility: Use 16px base body; large text rules for 18pt+ or 14pt+ bold for 3:1 contrast exceptions.
+- Weights: 400 (Regular), 600 (SemiBold), 700 (Bold)
+- Accessibility: ensure large text scale corresponds to 18pt+ or 14pt bold for 3:1 contrast checks.
 
-Spacing
-- Base: 8px
-- Scale: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64
-- Form spacing:
-  - Vertical gap between form controls: 16px
-  - Form outer padding (mobile): 24px
-  - Card padding: 20px
+Spacing Tokens
+- base: 8px
+- scale: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64
+- Use tokens for padding/margins on components: e.g., card.padding = 24px (3x base).
 
-Radius
-- radius.small: 4px (inputs, small buttons)
-- radius.medium: 8px (cards, modals)
-- radius.large: 16px (dialogs)
-- radius.full: 9999px (pills/avatars)
+Radius Tokens
+- radius.small: 4px
+- radius.medium: 8px
+- radius.large: 16px
+- radius.pill: 9999px
 
 Elevation / Shadows
-- elevation.1: 0 1px 2px rgba(16,24,40,0.04)
-- elevation.2: 0 2px 6px rgba(16,24,40,0.08)
-- elevation.3: 0 8px 20px rgba(16,24,40,0.12)
+- elevation.01: 0 1px 2px rgba(16,24,40,0.04)
+- elevation.02: 0 4px 8px rgba(16,24,40,0.06)
+- elevation.03: 0 8px 24px rgba(16,24,40,0.08)
 
-Motion
-- duration.micro: 150ms
-- duration.short: 200ms
-- duration.medium: 300ms
-- duration.long: 400-500ms
-- easing.standard: cubic-bezier(0.2, 0.8, 0.2, 1)
-- reduced-motion: respects prefers-reduced-motion
+Motion Tokens
+- motion.duration.fast: 150ms
+- motion.duration.medium: 200ms
+- motion.duration.slow: 300ms
+- motion.easing: cubic-bezier(0.22, 0.12, 0.2, 1)
+- Motion reduction: provide reduced-motion boolean switch.
 
-Shadow & Border tokens for states
-- border.default: 1px solid {neutral.300}
-- border.focus: 2px solid {color.focus}
-- input.error.border: 1px solid {color.error}
-
-Token usage rules:
-- Always reference semantic tokens in components (no hex literals).
-- Map light/dark tokens in 01_Foundations and implement theme swap variables.
-
-## 2. Component Specifications
-
-Each component lists variants, states, accessibility, anatomy and usage guidance.
-
-C/Actions/Button
-- Anatomy: Label text, optional icon (leading/trailing), spinner for loading.
-- Variants: Primary (filled), Secondary (outline), Ghost (transparent), Link (inline)
-- Sizes: Small (32px), Medium (40px), Large (48px)
-- States: Default, Hover (elevation + color lighten 6%), Focus (2px focus border color.focus), Active (press scale 0.98), Disabled (40% opacity), Loading (spinner replaces label; keep width stable)
-- Accessibility:
-  - role="button", aria-disabled when disabled
-  - Spinner should have aria-hidden="true"; button should provide aria-busy="true" when loading
-- Examples:
-  - Primary/Medium: background={color.primary}, color={white}, radius=8px
-
-C/Inputs/TextField
-- Anatomy: Label, input, helper text, error text
-- Variants: Email, Password (with reveal toggle), Search
-- Sizes: Medium default (40px)
-- States: Default (border: neutral.300), Focus (border focus token + ring), Error (border error + icon), Disabled
-- Accessibility:
-  - <label for="id">, input id maps, aria-describedby links helper/error
-  - Use aria-invalid="true" on error
-- PasswordInput:
-  - Reveal toggle is a button with aria-pressed state and accessible label "Show password" / "Hide password"
-
-C/Checkbox
-- Default & disabled states; focus ring visible
-- Hit area minimum 44x44px on mobile
-
-C/Feedback/Banner
-- Types: Info (blue), Success (green), Warning (yellow), Error (red)
-- Placement: top of page or form-level; should be dismissible when non-critical
-- Accessibility:
-  - role="status" or role="alert" depending on severity; use aria-live accordingly
-
-C/Feedback/Modal
-- Use for Unlock confirmation, session expiry, CAPTCHA overlay
-- Behavioral rules:
-  - Focus trap while open; restore focus on close
-  - Dismiss with ESC
-  - Provide accessible heading and close button with aria-label
-
-C/Content/Card
-- Use for admin result rows or contextual info
-- Variants: default, compact
-- Accessibility:
-  - Ensure card actions are keyboard accessible and have aria-labels
-
-C/DataTable (Admin Audit Summary)
-- Features: sortable columns, filters, pagination, export
-- Accessibility:
-  - Use semantic table markup (<table>, <thead>, <tbody>) and scope attributes for headers
-  - Row actions accessible via keyboard; provide summary for screen readers
-- Performance:
-  - Use virtualization if events count >1000 (but validate per product constraints)
-
-C/Media/QRCodeContainer
-- Must have alt text and aria-describedby pointing to instructions
-- Provide manual code in plain text for users who cannot scan QR
-
-C/Feedback/Skeleton
-- Shimmer animation (respects reduced motion) used for SCR-013 loading
-
-Naming & Properties:
-- Component names: C/<Category>/<Name> (e.g., C/Inputs/TextField)
-- Each component includes variant properties: Type, Size, State, Icon
-
-## 3. Brand Guidelines
-
-Logo usage:
-- Primary logo: use on header in light/dark variants.
-- Clearspace: 2x logo height on all sides.
-- Minimum size: 32px height for header use.
-
-Brand colors:
-- Primary: color.primary
-- Accent: neutral.700 for text, green for success, red for errors.
-- Do not use purple gradients on white backgrounds (per ui-ux-design-standards constraint).
-
-Iconography:
-- Style: Outline with 2px stroke; fill for status badges only.
-- Labels: all icons must have text labels or aria-label.
-
-Illustrations:
-- Style: Flat and friendly for empty states; avoid decorative heavy textures on auth surfaces.
-- Photography: N/A for authentication screens.
-
-Brand voice:
-- Tone: Confident, supportive, non-blaming.
-- Error messages: short, helpful, non-accusatory (e.g., "Invalid credentials. Try again or reset your password.")
-- Empty states: encouraging, instructive with clear CTA.
-
-Typography recommendations:
-- Early-release: system font stack for performance and accessibility.
-- Later brand update: introduce production fonts via tokenized family variables.
-
-## 4. Accessibility Standards (WCAG compliance details)
-
-- Target: WCAG 2.2 Level AA compliance for all new/modified UI.
-- Contrast:
-  - Normal text: >=4.5:1
-  - Large text: >=3:1
-  - UI components: >=3:1
-- Focus:
-  - Visible focus indicator for all interactive elements; minimum 2px outline, color.focus token.
-- Keyboard:
-  - Full keyboard operability for modals, forms, lists, and tables.
-  - Use roving tabindex patterns for complex composites only when necessary; otherwise prefer semantic controls.
-- Screen Reader:
-  - Labels, role attributes, and aria-describedby for error instructions.
-  - Use aria-live regions for status and banner updates.
-- Forms:
-  - Inputs associated with labels, required fields use aria-required.
-  - Inline errors include pointer to invalid inputs.
-- Images:
-  - Alt text for informative images; decorative images marked alt="".
-- Motion:
-  - Respect prefers-reduced-motion; provide non-animated fallbacks for skeletons and micro-animations.
-- Testing checklist to include:
-  - Color contrast verification
-  - Keyboard-only navigation walkthrough
-  - Screen reader read-through (NVDA/VoiceOver)
-  - Touch target audit for mobile
-  - Automated scans (Axe) and manual validation
-
-## 5. Usage Guidelines and Examples
-
-Example: Login Form (component composition)
-- Compose: Page container -> C/Content/Card (form card) -> C/Inputs/TextField (email) -> C/Inputs/PasswordInput -> C/Actions/Button (Primary) -> C/Actions/Button (Link) for Forgot
-- Behavior:
-  - Primary button disabled until inputs valid.
-  - On click: button shows spinner and aria-busy set to true.
-  - On server error: show C/Feedback/Banner error with aria-live.
-
-Example: Password Reset Flow
-- Flow composition:
-  - SCR-002: Email input -> submit -> show SCR-003 confirmation banner (info)
-  - SCR-004: Reset page uses PasswordInput with strength meter (aria-live region) and confirm field.
-
-Admin Unlock example
-- Table row selection -> open Confirm Unlock Modal (C/Feedback/Modal)
-- Confirm modal requires audit note (TextArea) — validate non-empty -> Unlock API call -> toast success
-
-Error copy rules (security)
-- Authentication failures: "Invalid credentials" — do NOT state whether email exists.
-- Forgot password response: "If an account exists, a reset link has been sent."
-- Account locked: provide next steps and contact support link but not internal lock reasons.
-
-Dark mode support
-- Provide 1:1 parity tokens for dark mode; verify contrast in dark backgrounds.
-- Toggle or auto-detect via OS preference.
-
-Token mapping examples (YAML snippet)
+Token YAML Example (for dev integration)
 ```yaml
 colors:
   primary:
-    value: "{color.blue.500}"
-    usage: "Primary CTAs"
+    value: "#0A66C2"
+    usage: "Primary CTAs, active states"
 typography:
   heading1:
-    family: "Inter"
+    family: "IBM Plex Sans"
     size: "28px"
     weight: "600"
 spacing:
   base: "8px"
+radius:
+  small: "4px"
+motion:
+  duration:
+    fast: "150ms"
 ```
 
-(Include actual token files under 01_Foundations in Figma project and export for dev.)
+---
 
-Governance & Contribution
-- Single source of truth: designsystem.md and 01_Foundations are canonical.
-- Change requests: file an issue with rationale; design owner approves token changes.
-- Versioning: increment token version when primitives change; include migration notes.
+## 2. Component Specifications
 
-Examples and Patterns
-- Error banner + inline error pattern approved for auth screens and must be reused.
-- MFA QR pattern: provide QR + manual code + accessible copy/download of recovery codes.
-- CAPTCHA overlay: use modal variant; ensure keyboard trap and accessible challenge fallback.
+Overview
+- All components must implement variant properties: Type, Size, State, Icon.
+- Naming convention: C/<Category>/<Name>.
+
+Actions — Button (C/Actions/Button)
+- Variants: Primary, Secondary, Ghost.
+- Sizes: Small (32px height), Medium (40px), Large (48px).
+- States: Default, Hover, Focus, Active, Disabled, Loading.
+- Accessibility:
+  - Role: <button>
+  - Focus: 2px outline color.focus with 2px offset; visible contrast.
+  - Disabled: aria-disabled="true" and grayed styling (40% opacity).
+- Behavior:
+  - Loading: spinner left of label, label text changes to "Signing in..." optionally.
+  - Keyboard: Enter activates when focused; Space triggers click.
+
+Inputs — TextField (C/Inputs/TextField)
+- Variants: standard, password (visibility toggle), email, with prefix/suffix.
+- States: Default, Focus, Error, Disabled, Readonly.
+- Sizing: Height = 40px (M), 48px (L).
+- Accessibility:
+  - Use <label for="id"> and input id mapping in code.
+  - Error messages are linked via aria-describedby.
+  - aria-required for required fields.
+- Error Treatment:
+  - Border color uses color.error and an error icon (combined with text).
+  - Do not reveal authentication-specific information in errors.
+
+Password Component (C/Inputs/PasswordField)
+- Contains trailing icon toggle (eye).
+- Strength meter: 3 levels; visually and textually represented (aria-live updates).
+
+Checkbox / Toggle / Radio
+- Touch target min 44x44px.
+- Keyboard focusable; aria-checked / aria-pressed as appropriate.
+
+Feedback — Banner (C/Feedback/Banner)
+- Types: Info, Success, Error, Warning.
+- Placement: Top of card; dismissible.
+- Accessibility: role="status" for informative, role="alert" for errors (assertive).
+
+Modal (C/Feedback/Modal)
+- Variants: Confirm (destructive), Informational.
+- Behavior: Focus trap; Escape closes; initial focus on first actionable control.
+- Animation: Fade + scale (200ms) with reduced-motion alternative.
+
+Skeleton (C/Feedback/Skeleton)
+- Variants: Card, TableRow, InputRow.
+- Use shimmer only when not in reduced-motion; skeleton color token neutral.300.
+
+CAPTCHA Component (C/Feedback/CAPTCHA)
+- Integration wrapper around provider widget.
+- Fallback accessible description and a "can't complete?" support flow.
+- Marked as focusable and announced via aria-describedby.
+
+Table (C/Content/Table)
+- Headings use <th scope="col">.
+- Left-align text, right-align numeric values.
+- Pagination & filters available on admin audit screens.
+- Rows support keyboard selection and row actions.
+
+MFA Components (C/Security/MFAEnrollment & C/Security/MFAVerify)
+- Enrollment:
+  - QR image container with alt text "QR code for authenticator app".
+  - Secret string in monospace with copy button.
+  - Recovery codes list with copy & download.
+- Verify:
+  - Numeric input (6 digits). Allow paste and numeric keypad on mobile.
+  - Rate-limit errors map into account lockout logic.
+
+Icons & Imagery
+- Icon set: outline style consistent across UI.
+- Illustrations: flat, minimal (for empty states) with muted palette matching brand.
+
+Component Documentation (what to include)
+- Purpose, variants, token references, accessibility notes, states, spacing rules, and example usages.
+
+---
+
+## 3. Brand Guidelines
+
+Logo Usage
+- Provide full-color and monochrome assets.
+- Clear space: minimum 16px around logo (2x base token).
+- Do not stretch, recolor, or rotate the logo.
+- Use monochrome white on dark backgrounds and full-color on light surfaces.
+
+Brand Colors & Roles
+- Primary: color.primary used for CTAs and links.
+- Supportive semantic colors: success, warning, error, info.
+- Neutral palette: used for surfaces, borders, and text.
+
+Tone of Voice
+- Professional, helpful, and non-blaming.
+- Error messages: concise, actionable, and privacy-preserving. Example: "Invalid credentials" vs "Email not found".
+- Empty states: encouraging and instructive; include clear CTA.
+
+Illustration & Photography
+- Illustration style: flat, minimal, geometric shapes, muted accents.
+- Photography: professional, contextual images for marketing screens only (not used in auth flows).
+
+Iconography
+- Use line-based icons (24px). Provide accessible label strings for each icon usage.
+
+---
+
+## 4. Accessibility Standards (WCAG Compliance Details)
+
+WCAG 2.2 Level AA (minimum)
+- Text contrast:
+  - Normal text: ≥ 4.5:1
+  - Large text (18pt+ or 14pt bold): ≥ 3:1
+- UI component contrast: ≥ 3:1 where perceptible.
+- Keyboard:
+  - All interactive components keyboard navigable.
+  - Logical tab order; skip link to main content on pages with header.
+- Forms:
+  - Labels programmatically associated; error messages linked with aria-describedby.
+  - Required fields use aria-required and visual mark.
+- Live Regions:
+  - Use aria-live="assertive" for important errors; aria-live="polite" for non-critical notifications.
+- Motion:
+  - Honor prefers-reduced-motion. Provide non-animated alternatives and avoid motion-triggered dizziness.
+- Screen Reader:
+  - Use semantic HTML equivalents for Figma handoff suggestions (button, nav, main, form).
+- Testing:
+  - Automated (Axe, Accessibility Insights) and manual screen reader (VoiceOver & NVDA) tests before release.
+- Localization:
+  - Allow for text expansion; avoid fixed-size containers that truncate localized content.
+
+Accessibility Implementation Guide
+- For each component in 02_Components, include:
+  - ARIA roles/props
+  - Keyboard interactions
+  - Announcements & live region behavior
+  - Focus management strategy
+
+---
+
+## 5. Usage Guidelines and Examples
+
+Token Usage Rules
+- Use semantic tokens (color.primary) in components rather than primitives.
+- Example:
+  - Button background: button.primary.background (semantic) → color.primary
+  - Input border error: input.border.error → color.error
+
+Component Usage Examples (concise)
+- Login Button (Primary, Medium, Default)
+  - Component: C/Actions/Button
+  - Props: type=Primary, size=M, state=Default
+  - Token refs: button.primary.background, typography.body1, radius.medium
+  - Accessibility: aria-label="Sign in"
+
+- Password Field with Strength Meter
+  - Component: C/Inputs/PasswordField + C/Forms/PasswordStrength
+  - Behavior: show strength only on new passwords (Reset flow) per UXR-103.
+
+- Admin Audit Table
+  - Component: C/Content/Table
+  - Behavior: sorted by default on timestamp desc, filters on left, pagination below.
+  - Accessibility: header cells use scope; row actions accessible via keyboard and labelled.
+
+Dark Mode & High Contrast
+- Provide token mappings for dark mode versions of each color token.
+- High contrast mode: provide alternate tokens with higher saturation & contrast.
+
+Do's and Don'ts
+- DO use tokens for spacing/typography/colors.
+- DO provide accessible names for icons and interactive elements.
+- DO respect reduced-motion preferences.
+- DON'T expose secrets or tokens in UI or logs.
+- DON'T indicate account existence in error messages.
+
+Examples of Error Messaging (Tone & Safety)
+- Authentication failure: "Invalid credentials" (non-revealing).
+- Password reset request confirmation: "If an account exists, a reset email has been sent."
+- Account locked: "Your account is locked until [time]. Contact support for help."
+
+Versioning & Governance
+- Token changes must be versioned. Update 06_Handoff with changelog.
+- Component modifications require design review and accessibility sign-off.
+- Design System owner: Product Design lead; Engineering owner: Frontend Lead.
+
+Handoff & Implementation Notes
+- Provide code-name mapping for each Figma component in 06_Handoff (node IDs → component paths).
+- Provide example CSS variables (prefixed with --auth-).
+- Provide example props mapping: <Button type="primary" size="M" loading={true} disabled={false} />
+
+Maintenance & Contributions
+- Changes to tokens or components require documented justification and release notes.
+- Encourage reuse; no ad-hoc components without approval.
+
+Closing Notes
+This design system is tailored to the auth/product security context: it emphasizes clarity, minimalism, accessibility, and auditable patterns. All assets, tokens, and components must be present in Figma under the 6-page structure and linked to implementation artifacts in 06_Handoff.
 
 End of Design System.
