@@ -1,16 +1,23 @@
-## Design Modelling
+---
+description: UML architectural diagrams and sequence diagrams for the system generated from spec.md and design.md
+---
+
+# Design Modelling
 
 ## UML Models Overview
-This document contains the complete set of UML visual models for the Authentication Service: system context, component view, deployment, data flows, logical data model (ERD), AI flow diagrams (risk scoring), and one sequence diagram per use case (UC-001..UC-004). Diagrams follow the architecture decisions: Argon2id for password hashing (FR-003), Redis for low-latency revocation/rate counters (TR-002), PostgreSQL as canonical store (TR-001), secret manager for signing keys (TR-004), and an optional ML Risk Scoring service with deterministic policy enforcement (AIR-*). Rationale: NFR drivers (latency, auditability, safety) require fast ephemeral state (Redis), durable canonical records (Postgres), strong adaptive hashing (Argon2id) and managed secrets (KMS/Secret Manager).
+This document contains the UML visual models for the Email/Password Authentication Service: system context, component view, deployment, data flows, logical data model (ERD), AI risk-scoring pipeline, and one sequence diagram per use case (UC-001..UC-004). Diagrams follow architecture decisions: Argon2id for password hashing, Redis for low-latency revocation and counters, PostgreSQL as canonical store, Secret Manager for signing keys, and an optional Risk Scoring service (AIR-*). Rationale (context → decision → benefit):
+- NFR drivers: latency, availability, security, auditability.
+- Decision: stateless Auth Service + Redis caching + Postgres canonical store + Secret Manager + optional ML risk scorer.
+- Benefit: low-latency auth checks, durable audit trail, secure secrets handling, safe AI integration with deterministic enforcement.
 
 NFR-to-architecture decision mapping:
 | NFR | Architectural Decision |
 |-----|------------------------|
-| NFR-001 (latency) | Use Go or low-latency runtime + Redis for token checks and caching; token creation local signing via Secret Manager keys |
-| NFR-002 (availability) | Stateless auth service containers + autoscaling behind API Gateway, multi-AZ DB and Redis |
+| NFR-001 (latency) | Go or low-latency runtime + Redis for token checks and caching; local signing via Secret Manager keys |
+| NFR-002 (availability) | Stateless auth containers + autoscaling, multi-AZ DB and Redis |
 | NFR-003 (security) | Argon2id hashing, TLS 1.2+, secure cookies, Secret Manager for keys |
-| NFR-005 (consistency) | Postgres as authoritative store for failed_attempts/locked_until; reconcile jobs for edge caches |
-| AIR-* (AI requirements) | Separate Risk Scoring service behind AI Gateway; deterministic policy layer for final decisions |
+| NFR-005 (consistency) | Postgres as authoritative store for failed_attempts/locked_until; reconcile jobs for caches |
+| AIR-* (AI requirements) | Isolated Risk Scoring service + deterministic policy layer and circuit-breaker
 
 ## Architectural Views
 
@@ -19,6 +26,7 @@ NFR-to-architecture decision mapping:
 @startuml
 left to right direction
 skinparam packageStyle rectangle
+skinparam linetype ortho
 
 actor "End User (Browser/Mobile)" as User #add8e6
 actor "Administrator" as Admin #add8e6
@@ -26,9 +34,9 @@ actor "Administrator" as Admin #add8e6
 cloud "API Gateway / WAF" as APIGW #d3d3d3
 
 package "Authentication System" {
-  component "Auth Service (Stateless)" as Auth #90ee90
-  database "User Store (Postgres)" as DB #ffffe0
-  database "Token/Cache (Redis)" as REDIS #ffffe0
+  component "Auth Service (Stateless)\n(API handlers, Orchestrator)" as Auth #90ee90
+  database "User Store (Postgres)\n(User, Token, ResetToken, AuditLog)" as DB #ffffe0
+  database "Token/Cache (Redis)\n(revocation, rate counters)" as REDIS #ffffe0
   component "Secret Manager / KMS" as Secrets #ffd27f
   component "Email Provider (SES/SendGrid)" as Email #d3d3d3
   component "Monitoring / Logging" as Mon #ffcc99
@@ -40,13 +48,12 @@ APIGW --> Auth : Forward request\n(HTTPS)
 Auth --> DB : Parameterized query\nSELECT / UPDATE user
 Auth --> REDIS : GET/SET counters, revocation, TTL
 Auth ..> Secrets : Retrieve signing keys / hashing params
-Auth -> Email : Send reset email (async) 
-Auth -> Mon : Emit audit event (PII pseudonymized)
+Auth -> Email : Send reset email (async)
+Auth -> Mon : Emit audit event (pseudonymized)
 Auth --> Risk : (optional) Risk scoring request (pseudonymized features)
 Admin -> APIGW : HTTPS / Admin UI
 APIGW -> Auth : Admin endpoints (unlock, audit)
 
-' External boundaries
 APIGW ..> "CDN / Edge WAF" : Optional edge filtering
 @enduml
 ```
@@ -60,7 +67,7 @@ graph LR
   classDef external fill:#d3d3d3
   classDef infra fill:#ffd27f
 
-  User[Client\n(Web/Mobile)]:::actor
+  Client[Client\n(Web/Mobile)]:::actor
   APIGW[API Gateway / WAF]:::external
 
   subgraph "Auth Platform"
@@ -68,13 +75,13 @@ graph LR
     Validator[Input Validator\n(email/password rules)]:::core
     Orchestrator[Auth Orchestrator\n(login/reset flows)]:::core
     Hasher[Hashing Service\n(Argon2id wrapper)]:::core
-    TokenSvc[Token Service\n(JWT sign/opaque store)]:::core
-    LockoutSvc[LockoutService\nfailed_attempts / policy]:::core
-    RateLimiter[RateLimiter\nper-IP/account Redis]:::core
-    Revocation[RevocationService\nchecks Redis+Postgres]:::core
-    Audit[Audit Logger\nstructured events]:::core
+    TokenSvc[Token Service\n(JWT sign / opaque)]:::core
+    LockoutSvc[Lockout Service\n(failed_attempts, locked_until)]:::core
+    RateLimiter[RateLimiter\n(Per-IP/account Redis)]:::core
+    Revocation[RevocationService\n(Redis + Postgres)]:::core
+    Audit[Audit Logger\n(structured events)]:::core
     SecretsClient[Secrets Client\n(KMS/Secret Manager)]:::infra
-    AdminAPI[Admin API\nunlock & audit]:::core
+    AdminAPI[Admin API\n(unlock & audit)]:::core
   end
 
   DB[(Postgres\nUser, Tokens, ResetTokens, AuditLog)]:::data
@@ -83,7 +90,7 @@ graph LR
   Monitoring[Monitoring & Logs\nPrometheus / ELK]:::infra
   RiskSvc[Risk Scoring Service\n(optional)]:::external
 
-  User --> APIGW --> AuthAPI
+  Client --> APIGW --> AuthAPI
   AuthAPI --> Validator
   AuthAPI --> Orchestrator
   Orchestrator --> Hasher : verify/hash
@@ -119,39 +126,45 @@ node "Shared Services (Hub)" {
 
 package "VPC" {
   node "Public Subnet" {
-    node "API Gateway / Load Balancer" as ALB #d3d3d3
+    component "CDN / WAF / Edge" as EDGE #d3d3d3
+    component "API Gateway / ALB" as ALB #d3d3d3
   }
 
-  node "Private Subnets (multi-AZ)" {
-    folder "Auth Service Cluster\n(Autoscaling pods / Fargate tasks)" as AUTHCLUSTER #90ee90
-    database "Postgres (managed, Multi-AZ)" as PG #ffffe0
-    database "Redis (managed, Multi-AZ)" as RDS #ffffe0
-    node "AI Subnet (optional)" {
+  node "Private Subnets (Multi-AZ)" {
+    node "Auth Service Cluster (Autoscaled)" {
+      component "Auth Container Instance 1" as AUTH1 #90ee90
+      component "Auth Container Instance 2" as AUTH2 #90ee90
+      component "Auth Container Instance N" as AUTHN #90ee90
+    }
+
+    node "Data Plane" {
+      database "Postgres (Managed Multi-AZ)" as PG #ffffe0
+      database "Redis (Managed cluster)" as RDS #ffffe0
+    }
+
+    node "AI / Model Serving (Optional)" {
       component "Risk Scoring Endpoint" as RISK #d3d3d3
     }
   }
 
-  node "Operations Subnet" {
-    node "Bastion / Admin Console" as BASTION #add8e6
+  node "Management Subnet" {
+    component "Admin Console (restricted)" as ADMIN #add8e6
+    component "Backup & Scheduler" as BACKUP #ffd27f
   }
 }
 
-node "External Services" {
-  component "Transactional Email Provider (SES)" as EMAIL #d3d3d3
-  component "Model Registry / Managed ML" as MLR #d3d3d3
-}
+EDGE --> ALB : HTTPS
+ALB --> AUTH1 : HTTPS
+ALB --> AUTH2 : HTTPS
+ALB --> AUTHN : HTTPS
 
-' Networking arrows
-ALB --> AUTHCLUSTER : HTTPS (TLS 1.2+)\nHealth checks
-AUTHCLUSTER --> PG : SQL / Parameterized queries (private)
-AUTHCLUSTER --> RDS : Redis protocol (private)
-AUTHCLUSTER --> KMS : HTTPS\nGet signing keys
-AUTHCLUSTER --> MON : Metrics & logs
-AUTHCLUSTER --> EMAIL : HTTPS / SMTP (outbound)
-AUTHCLUSTER --> RISK : HTTPS (if enabled)
-CICD --> AUTHCLUSTER : Deploy images (secure pipeline)
-BASTION --> AUTHCLUSTER : Admin / debug (VPN/SSO)
-PG --> "Backup Service" : Snapshot / PITR
+AUTH1 --> PG : Parameterized SQL
+AUTH1 --> RDS : GET/SET counters, revocation
+AUTH1 ..> KMS : Retrieve signing keys / secrets
+AUTH1 --> MON : Metrics & logs
+AUTH1 --> "Email Provider (External)" : SMTP/HTTPS
+AUTH1 --> RISK : HTTPS (optional)
+BACKUP --> PG : backup / PITR
 
 @enduml
 ```
@@ -164,61 +177,57 @@ PG --> "Backup Service" : Snapshot / PITR
 !define EXTERNAL component
 
 left to right direction
-
-EXTERNAL "Client (Browser/Mobile)" as client
-PROCESS "API Gateway / WAF" as gateway
-PROCESS "Auth Service\n(Login / Forgot / Reset)" as auth
-DATASTORE "Postgres - User/Token/Reset/Audit" as pg
-DATASTORE "Redis - Revocation / Counters" as redis
-EXTERNAL "Email Provider\n(SES/SendGrid)" as email
+EXTERNAL "Client (Browser / Mobile)" as client
+PROCESS "Auth API\n(Validate & Orchestrate)" as auth
+PROCESS "Hashing Module\n(Argon2id verifier/rehash)" as hash
+PROCESS "Token Service\n(issue/verify tokens)" as token
+DATASTORE "Postgres\n(User, Token, ResetToken, AuditLog)" as db
+DATASTORE "Redis\n(revocation, counters, short cache)" as redis
 EXTERNAL "Secret Manager / KMS" as kms
+EXTERNAL "Email Provider" as email
 EXTERNAL "Risk Scoring Service (optional)" as risk
-EXTERNAL "Monitoring / Event Stream" as stream
+EXTERNAL "Monitoring / Logging" as mon
 
-client -> gateway : POST /auth/login\nTLS
-gateway -> auth : Forward request\n(HTTPS)
-auth -> kms : Fetch signing key / hash params
-auth -> pg : SELECT user by email
-auth -> auth : Verify password via Hashing Service
-auth -> redis : Check rate-limit / revocation
-alt password valid & not locked
-  auth -> redis : Reset failed_attempts
-  auth -> pg : Write token session record (if opaque)
-  auth -> redis : Store revocation TTL (if needed)
-  auth -> stream : Emit audit event (login_success)
-  auth -> client : 200 OK + token / redirect
-else invalid credentials
-  auth -> pg : Increment failed_attempts
-  auth -> stream : Emit audit event (login_failed)
-  opt lockout threshold reached
-    auth -> pg : Set locked_until
-    auth -> email : (optional) send lockout notice
+client -> auth : POST /auth/login\nemail,password
+auth -> db : SELECT user by email
+db --> auth : user row
+auth -> hash : Verify password with hash params
+hash --> auth : match / no match
+opt password match
+  auth -> risk : (optional) request risk score\n(pseudonymized features)
+  risk --> auth : risk_score
+  alt low risk
+    auth -> token : Sign token (get key)
+    token -> kms : Get signing key (or fetch cached)
+    kms --> token : signing key
+    token --> auth : access token + refresh token metadata
+    auth -> redis : write revocation/TTL for refresh token
+    auth -> db : persist refresh token metadata (if used)
+    auth --> client : 200 OK + token
+  else step-up / high risk
+    auth --> client : 401 + challenge (MFA/CAPTCHA)
   end
-  auth -> client : 401 Invalid credentials / 423 Locked
+else password mismatch
+  auth -> db : increment failed_attempts
+  auth -> redis : increment IP counter
+  alt lockout threshold reached
+    auth -> db : set locked_until
+    auth --> client : 423 Account locked
+  else
+    auth --> client : 401 Invalid credentials
+  end
 end
 
-' Forgot password flow
-client -> gateway : POST /auth/forgot-password
-gateway -> auth : Forward
-auth -> pg : Lookup user (if exists)
-auth -> pg : Insert ResetToken (single-use, TTL)
-auth -> email : Send reset link (if user exists)
-auth -> stream : Emit audit event (reset_requested)
-auth -> client : 200 "If account exists..."
+client -> auth : POST /auth/forgot-password\nemail
+auth -> db : lookup email (if exists)
+alt exists
+  auth -> db : create ResetToken
+  auth -> email : send reset link
+end
+auth --> client : 200 (non-revealing)
 
-' Reset flow
-client -> gateway : POST /auth/reset (token + new password)
-gateway -> auth : Forward
-auth -> pg : Validate ResetToken (single-use)
-auth -> auth : Hash new password (Argon2id)
-auth -> pg : Update user.password_hash; invalidate ResetToken
-auth -> stream : Emit audit event (reset_completed)
-auth -> client : 200 OK
-
-' Risk scoring (optional)
-auth -> risk : Request risk_score (pseudonymized features)
-risk --> auth : risk_score, reason_codes
-auth -> stream : Emit audit entry with model_version
+auth -> mon : emit audit events
+mon -> db : (optional) archive / indexing
 @enduml
 ```
 
@@ -226,17 +235,30 @@ auth -> stream : Emit audit entry with model_version
 ```mermaid
 erDiagram
   USER {
-    UUID id PK "uuid"
-    string email "unique, indexed"
+    UUID id PK "Primary key"
+    string email "unique"
     string password_hash
     string hash_algo
     json hash_params
     int failed_attempts
     timestamp locked_until
+    timestamp last_login_at
     timestamp created_at
     timestamp updated_at
-    timestamp last_login_at
   }
+
+  ROLE {
+    UUID id PK
+    string name "unique"
+    json permissions
+  }
+
+  USER_ROLE {
+    UUID id PK
+    UUID user_id FK
+    UUID role_id FK
+  }
+
   TOKEN {
     UUID token_id PK
     UUID user_id FK
@@ -246,14 +268,16 @@ erDiagram
     boolean revoked
     json metadata
   }
+
   RESET_TOKEN {
     UUID id PK
     UUID user_id FK
-    string token "secure single-use"
+    string token "secure single-use token"
     timestamp issued_at
     timestamp expires_at
     boolean used_flag
   }
+
   AUDIT_LOG {
     UUID event_id PK
     string event_type
@@ -264,317 +288,281 @@ erDiagram
     string correlation_id
     json metadata
   }
-  ROLE {
-    UUID role_id PK
-    string name
-    json permissions
-  }
-  USER_ROLE {
-    UUID id PK
-    UUID user_id FK
-    UUID role_id FK
-  }
-  REVOCATION_RECORD {
-    UUID id PK
+
+  REVOCATION {
+    UUID revocation_id PK
     UUID token_id FK
     timestamp revoked_at
+    string revoked_by
     string reason
-  }
-  RISK_ASSESSMENT {
-    UUID id PK
-    string user_id_or_hash
-    string request_id
-    float risk_score
-    string reason_codes
-    string model_version
-    timestamp timestamp
   }
 
   USER ||--o{ TOKEN : "has"
-  USER ||--o{ RESET_TOKEN : "has"
-  USER ||--o{ AUDIT_LOG : "generates"
+  USER ||--o{ RESET_TOKEN : "owns"
+  USER ||--o{ AUDIT_LOG : "emits"
   USER ||--o{ USER_ROLE : "assigned"
-  ROLE ||--o{ USER_ROLE : "maps"
-  TOKEN ||--o{ REVOCATION_RECORD : "may have"
-  USER ||--o{ RISK_ASSESSMENT : "may have"
+  ROLE ||--o{ USER_ROLE : "maps to"
+  TOKEN ||--o{ REVOCATION : "may have"
 ```
 
 ## AI Architecture Diagrams
 
 ### Risk Scoring Pipeline (Mermaid flow)
 ```mermaid
-flowchart LR
-  classDef data fill:#ffffe0
-  classDef core fill:#90ee90
+graph LR
   classDef external fill:#d3d3d3
+  classDef infra fill:#ffd27f
+  classDef core fill:#90ee90
 
-  Events[Auth Events\n(Kafka/Kinesis)]:::data
-  FE[Feature Engineering\nJobs/Materialization]:::core
-  FS[Feature Store / Cache\n(Feast / Redis)]:::data
-  TRAIN[Model Training\n(batch jobs)]:::core
-  MODEL_REG[Model Registry / MLFlow]:::external
-  SERVE[Model Serving\n(SageMaker / FastAPI)]:::external
-  AI_GW[AI Gateway\n(timeout, cache, CB)]:::core
-  APISVC[Auth Service\n(consumer)]:::core
-  AUDIT[Model Telemetry & Audit]:::external
+  Auth[Auth Service\n(Event source)]:::core
+  Stream[Event Stream\n(Kafka/Kinesis)]:::infra
+  FS[Feature Store / Cache\n(Redis/Feast)]:::infra
+  ETL[ETL / Feature Jobs]:::infra
+  Train[Training Pipeline\n(Batch)]:::infra
+  Registry[Model Registry / MLFlow]:::infra
+  ModelServe[Model Server\n(Endpoint)]:::infra
+  AIGW[AI Gateway\n(timeout, CB, cache)]:::infra
+  Telemetry[Model Telemetry & Explainability]:::infra
+  Audit[Audit Store / DB]:::infra
 
-  Events --> FE --> FS
-  FE --> TRAIN --> MODEL_REG
-  MODEL_REG --> SERVE
-  APISVC --> AI_GW --> SERVE
-  SERVE --> APISVC
-  SERVE --> AUDIT
-  APISVC --> AUDIT
+  Auth -->|publish events| Stream
+  Stream --> ETL
+  ETL --> FS
+  ETL --> Train
+  Train --> Registry
+  Registry --> ModelServe
+  Auth -->|scoring request| AIGW
+  AIGW --> ModelServe
+  ModelServe -->|score+meta| AIGW
+  AIGW --> Auth
+  ModelServe --> Telemetry
+  Auth --> Audit
+  Telemetry --> Registry
 ```
 
-### AI Runtime Sequence (Mermaid sequence)
+### AI Sequence Diagram — Risk-scored Login (Mermaid)
 ```mermaid
 sequenceDiagram
-    participant Client as Client
+    participant User as End User
     participant APIGW as API Gateway
     participant Auth as Auth Service
-    participant AI_GW as AI Gateway
-    participant Risk as Risk Scoring
-    participant Policy as Policy Engine
     participant DB as Postgres
-    participant Audit as Audit Logger
+    participant Redis as Redis
+    participant Secrets as Secret Manager
+    participant Risk as Risk Scoring
+    participant Token as Token Service
 
-    Note over Client,Auth: AI Runtime - Risk scoring used for step-up decisions
+    Note over User,Token: UC-001 (AI path) - Login with Risk Scoring
 
-    Client->>APIGW: POST /auth/login (email, pwd)
+    User->>APIGW: POST /auth/login (email,password)
     APIGW->>Auth: Forward request
     Auth->>DB: SELECT user by email
-    DB-->>Auth: user record
-    Auth->>AI_GW: Request risk_score (pseudonymized features)
-    alt AI Gateway cache hit
-      AI_GW-->>Auth: Cached risk_score
-    else AI call
-      AI_GW->>Risk: Score request
-      Risk-->>AI_GW: risk_score, reason_codes, model_version
-      AI_GW-->>Auth: risk_score, reason_codes
+    DB-->>Auth: user row
+    Auth->>Secrets: Fetch hash params & signing key
+    Secrets-->>Auth: params, key meta
+    Auth->>Auth: Verify password (Argon2id)
+    alt password valid and not locked
+      Auth->>Redis: read failed_attempts, ip counters
+      Auth->>Risk: Request risk score (pseudonymized features)
+      Risk-->>Auth: {score, reason_codes, model_version}
+      alt score >= threshold_high
+        Auth-->>User: 401 + step-up challenge (MFA/CAPTCHA)
+      else score < threshold_high
+        Auth->>Token: Issue access & refresh tokens (sign)
+        Token-->>Auth: tokens
+        Auth-->>User: 200 OK + token + role
+      end
+    else invalid credentials
+      Auth->>DB: increment failed_attempts
+      Auth->>Redis: increment IP counter
+      Auth-->>User: 401 Invalid credentials
     end
-    Auth->>Policy: Evaluate score -> action (allow, require_mfa, block)
-    alt allow
-      Policy-->>Auth: allow
-      Auth-->>Client: 200 OK + token
-    else require_mfa
-      Policy-->>Auth: require_mfa
-      Auth-->>Client: 200 Pending step-up (MFA/CAPTCHA)
-    else block
-      Policy-->>Auth: block
-      Auth-->>Client: 403 Forbidden
-    end
-    Auth->>Audit: Emit audit with model_version & decision
 ```
 
 ## Use Case Sequence Diagrams
 
-> Note: Sources point to spec.md anchors for traceability.
-
-#### UC-001: Login with Email & Password
-**Source**: [.propel/context/docs/spec.md#UC-001](.propel/context/docs/spec.md#UC-001)
+### UC-001: Login with Email & Password
+**Source**: spec.md#UC-001
 
 ```mermaid
 sequenceDiagram
-    participant EndUser as End User
-    participant API as API Gateway
+    participant User as End User
+    participant APIGW as API Gateway
     participant Auth as Auth Service
-    participant Validator as Input Validator
     participant DB as User Store (Postgres)
-    participant Hasher as Hashing Service (Argon2id)
-    participant Token as Token Service
-    participant Redis as Redis (revocation/counters)
+    participant Redis as Redis
     participant Secrets as Secret Manager
-    participant Risk as Risk Scoring Service
-    participant Audit as Audit Logger
+    participant Token as Token Service
+    participant Risk as Risk Scoring (optional)
 
-    Note over EndUser,Token: UC-001 - Login with Email & Password
+    Note over User,DB: UC-001 - Login with Email & Password
 
-    EndUser->>API: POST /auth/login {email,password}
-    API->>Auth: Forward request
-    Auth->>Validator: Validate inputs
-    alt Validation fails
-      Validator-->>Auth: 400 validation.error
-      Auth-->>API: 400 validation.error
-      API-->>EndUser: 400 validation.error
-    else Validation succeeds
-      Validator-->>Auth: OK
-      Auth->>DB: SELECT user by email
-      DB-->>Auth: user record
-      alt account locked (locked_until > now)
-        Auth-->>API: 423 Account locked
-        API-->>EndUser: 423 Account locked
-        Auth->>Audit: log lockout_attempt
-      else proceed
-        Auth->>Secrets: Get hashing params / signing key
-        Secrets-->>Auth: params / key
-        Auth->>Hasher: Verify password (Argon2id)
-        Hasher-->>Auth: match / no-match
-        alt match (success)
-          Auth->>Redis: Reset failed_attempts for user
-          Auth->>Token: Issue access token (exp 30m)
-          Token-->>Auth: token + role
-          Auth->>Audit: log login_success
-          Auth-->>API: 200 {token, role, redirect}
-          API-->>EndUser: 200 {token, redirect}
-        else no-match (invalid credentials)
-          Auth->>DB: Increment failed_attempts
-          Auth->>Redis: Increment per-IP counters
-          alt threshold reached (failed_attempts >=5)
-            Auth->>DB: Set locked_until = now + lock_duration
-            Auth->>Audit: log lockout
-            Auth-->>API: 423 Account locked
-            API-->>EndUser: 423 Account locked
-          else below threshold
-            Auth->>Audit: log login_failed
-            Auth-->>API: 401 Invalid credentials
-            API-->>EndUser: 401 Invalid credentials
-          end
+    User->>APIGW: POST /auth/login (email,password)
+    APIGW->>Auth: Forward request (HTTPS)
+    Auth->>DB: SELECT * FROM users WHERE email=?
+    DB-->>Auth: user row / not found
+    Auth->>Secrets: Get hashing params / signing key
+    Secrets-->>Auth: hash params / key meta
+    Auth->>Auth: Verify password (Argon2id)
+    alt password valid and account not locked
+        Auth->>Redis: RESET failed_attempts for user/ip
+        opt Risk Scoring enabled
+            Auth->>Risk: POST /score (pseudonymized features)
+            Risk-->>Auth: {risk_score, reason_codes}
+            alt high risk
+                Auth-->>User: 401 Challenge (MFA/CAPTCHA)
+                Note right of Auth: Deterministic policy enforces step-up
+            else low/ok risk
+                Auth->>Token: Issue tokens (sign with key)
+                Token-->>Auth: access_token / refresh_token
+                Auth->>DB: persist refresh metadata (if used)
+                Auth-->>APIGW: 200 + token + role+redirect
+                APIGW-->>User: 200 OK + token
+            end
         end
-      end
+    else invalid credentials or user not found
+        Auth->>DB: increment failed_attempts (if user exists)
+        Auth->>Redis: increment IP counter
+        alt failed_attempts >= threshold
+            Auth->>DB: set locked_until = now + lock_duration
+            Auth-->>User: 423 Account locked
+        else
+            Auth-->>User: 401 Invalid credentials
+        end
     end
+    Auth->>Monitoring: emit audit event (pseudonymized)
 ```
 
-#### UC-002: Forgot Password / Reset Flow
-**Source**: [.propel/context/docs/spec.md#UC-002](.propel/context/docs/spec.md#UC-002)
+### UC-002: Forgot Password / Reset Flow
+**Source**: spec.md#UC-002
 
 ```mermaid
 sequenceDiagram
-    participant EndUser as End User
-    participant API as API Gateway
+    participant User as End User
+    participant APIGW as API Gateway
     participant Auth as Auth Service
     participant DB as User Store (Postgres)
-    participant Reset as ResetToken store (DB)
-    participant TokenGen as Token Generator
+    participant Reset as ResetToken Store
     participant Email as Email Provider
-    participant Audit as Audit Logger
 
-    Note over EndUser,Email: UC-002 - Forgot Password / Reset Flow
+    Note over User,Email: UC-002 - Forgot Password / Reset
 
-    EndUser->>API: POST /auth/forgot-password {email}
-    API->>Auth: Forward request
+    User->>APIGW: POST /auth/forgot-password (email)
+    APIGW->>Auth: Forward request
     Auth->>DB: SELECT user by email
     alt user exists
-      DB-->>Auth: user record
-      Auth->>TokenGen: Create ResetToken (single-use, TTL 15m)
-      TokenGen-->>Auth: reset_token
-      Auth->>Reset: Insert ResetToken record
-      Auth->>Email: Send reset link (async)
-      Auth->>Audit: log reset_requested (pseudonymized)
-      Auth-->>API: 200 "If account exists..."
-      API-->>EndUser: 200 "If account exists..."
-    else user not found
-      DB-->>Auth: no record
-      Auth->>Audit: log reset_requested (hashed email)
-      Auth-->>API: 200 "If account exists..."
-      API-->>EndUser: 200 "If account exists..."
+        Auth->>Reset: CREATE reset_token (single-use, TTL)
+        Reset-->>Auth: token created
+        Auth->>Email: send reset link (token)
+        Email-->>Auth: 202 Accepted
     end
+    Auth-->>APIGW: 200 OK (non-revealing)
+    APIGW-->>User: 200 "If an account exists, you will receive reset instructions"
 
     %% Reset usage
-    EndUser->>API: POST /auth/reset {token, new_password}
-    API->>Auth: Forward request
-    Auth->>Reset: Validate token (exists && not used && not expired)
-    alt invalid token
-      Reset-->>Auth: invalid/expired
-      Auth->>Audit: log reset_failed
-      Auth-->>API: 400 Invalid or expired token
-      API-->>EndUser: 400 Invalid or expired token
-    else valid token
-      Reset-->>Auth: valid + user_id
-      Auth->>TokenGen: Hash new password (Argon2id)
-      TokenGen-->>Auth: new_hash
-      Auth->>DB: Update user.password_hash, reset failed_attempts
-      Auth->>Reset: Mark token used
-      Auth->>Audit: log reset_completed
-      Auth-->>API: 200 Password reset complete
-      API-->>EndUser: 200 Password reset complete
+    User->>APIGW: POST /auth/reset (token, new_password)
+    APIGW->>Auth: Forward
+    Auth->>Reset: validate token (exists, not used, not expired)
+    alt valid token
+        Auth->>Auth: validate new password policy
+        Auth->>Auth: hash new password (Argon2id)
+        Auth->>DB: UPDATE users SET password_hash..., failed_attempts=0
+        Auth->>Reset: mark token used
+        Auth-->>User: 200 Password updated
+        Auth->>Monitoring: emit audit event
+    else invalid/expired
+        Auth-->>User: 400 Invalid or expired token
     end
 ```
 
-#### UC-003: Account Lockout Handling
-**Source**: [.propel/context/docs/spec.md#UC-003](.propel/context/docs/spec.md#UC-003)
+### UC-003: Account Lockout Handling (includes Admin Unlock)
+**Source**: spec.md#UC-003
 
 ```mermaid
 sequenceDiagram
-    participant EndUser as End User
-    participant API as API Gateway
+    participant User as End User
+    participant APIGW as API Gateway
     participant Auth as Auth Service
     participant DB as User Store (Postgres)
-    participant Email as Email Provider
-    participant Admin as Administrator
-    participant AdminAPI as Admin API
-    participant Audit as Audit Logger
     participant Redis as Redis
+    participant Admin as Administrator
 
-    Note over EndUser,Admin: UC-003 - Account Lockout Handling
+    Note over User,Admin: UC-003 - Account Lockout Handling
 
-    EndUser->>API: POST /auth/login {email,password}
-    API->>Auth: Forward request
-    Auth->>DB: SELECT user
-    Auth->>Redis: Increment per-account / per-IP counters
-    alt failed attempts threshold reached
-      Auth->>DB: Set locked_until = now + lock_duration
-      Auth->>Email: (optional) send lockout notification
-      Auth->>Audit: log account_locked
-      Auth-->>API: 423 Account is locked
-      API-->>EndUser: 423 Account is locked
-    else normal processing
-      Auth-->>API: continue login flow
+    %% Failed attempts flow (invoked by login failures)
+    User->>APIGW: POST /auth/login (bad credentials)
+    APIGW->>Auth: Forward
+    Auth->>DB: increment failed_attempts
+    Auth->>Redis: increment IP counter
+    alt failed_attempts < threshold
+        Auth-->>User: 401 Invalid credentials
+    else failed_attempts >= threshold
+        Auth->>DB: set locked_until = now + lock_duration
+        Auth->>Redis: mark lock
+        Auth->>Email: optional notify user (non-revealing)
+        Auth-->>User: 423 Account locked
+        Auth->>Monitoring: emit lockout audit event
     end
 
-    Admin->>AdminAPI: POST /admin/users/{id}/unlock
-    AdminAPI->>Auth: Authenticated admin request
-    Auth->>DB: Verify admin role, set locked_until = NULL, reset failed_attempts
-    Auth->>Audit: log admin_unlock with admin id
-    Auth-->>AdminAPI: 200 Unlocked
-    AdminAPI-->>Admin: 200 Unlocked
-```
+    %% Admin unlock
+    Admin->>APIGW: POST /admin/users/{id}/unlock
+    APIGW->>Auth: Forward (admin auth)
+    Auth->>DB: verify admin role
+    alt admin authorized
+        Auth->>DB: set failed_attempts=0; locked_until=NULL
+        Auth-->>Admin: 200 Unlocked
+        Auth->>Monitoring: emit admin unlock audit event
+    else
+        Auth-->>Admin: 403 Forbidden
+    end
 
-#### UC-004: Role-Based Authorization Enforcement & Redirect
-**Source**: [.propel/context/docs/spec.md#UC-004](.propel/context/docs/spec.md#UC-004)
-
-```mermaid
-sequenceDiagram
-    participant EndUser as End User
-    participant Client as Client App
-    participant API as API Gateway
-    participant Auth as Auth Service
-    participant TokenMiddleware as Token Validation Middleware
-    participant AppSvc as App Services (Resource Server)
-    participant DB as User Store (for role mapping)
-    participant Audit as Audit Logger
-
-    Note over EndUser,AppSvc: UC-004 - Role-Based Authorization & Redirect
-
-    EndUser->>Client: User completes login (has token)
-    Client->>API: GET /post-login-target with token
-    API->>Auth: Validate token or forward to TokenMiddleware
-    TokenMiddleware->>Auth: Verify signature / revocation
-    alt token invalid or expired
-      Auth-->>API: 401 Unauthorized
-      API-->>Client: 401 Please re-authenticate
-    else token valid
-      Auth->>DB: (optional) fetch roles if not in token
-      DB-->>Auth: role(s)
-      Auth-->>API: 200 {redirect_url}
-      API-->>Client: 200 {redirect_url}
-      Client->>AppSvc: GET /dashboard with token
-      AppSvc->>Auth: Validate token / role (TokenMiddleware)
-      alt role allowed
-        AppSvc-->>Client: 200 Dashboard content
-      else role forbidden
-        AppSvc-->>Client: 403 Forbidden
-        AppSvc->>Audit: log authorization_denied
+    %% Auto-unlock on expiry (background)
+    loop periodic checks
+      Auth->>DB: SELECT users WHERE locked_until <= now
+      DB-->>Auth: list unlocked_users
+      alt entries exist
+        Auth->>DB: reset failed_attempts, locked_until=NULL
+        Auth->>Monitoring: emit unlock audit event
       end
     end
 ```
 
-## Notes & Traceability
-- All ERD entities correspond to definitions in design.md (User, Token, ResetToken, AuditLog, Role, etc.).
-- Sequence diagrams include alternative paths (validation failure, invalid credentials, lockout) and optional AI interactions (UC-001 shows AI optional path via separate AI sequence diagram).
-- Secret retrievals (signing keys, hashing params) use Secret Manager (KMS) and are shown where required.
+### UC-004: Role-Based Authorization Enforcement & Redirect
+**Source**: spec.md#UC-004
 
-## Change / Extension Guidance
-- To enable refresh-token rotation (FR-011), extend Token entity with rotation_id and add rotation logic in Token Service; update sequence diagrams to include refresh rotation step.
-- To enable AI enforcement in production, deploy Risk Scoring with canary (MODEL_REG) and enable AI Gateway circuit-breaker; policy remains deterministic and must be auditable (AIR-004 / AIR-005).
+```mermaid
+sequenceDiagram
+    participant User as End User
+    participant Client as Client App
+    participant APIGW as API Gateway
+    participant Auth as Auth Service
+    participant TokenSvc as Token Service
+    participant AppSvc as Application Service
+    participant DB as User Store (Postgres)
 
+    Note over User,AppSvc: UC-004 - Role-Based Authorization & Redirect
+
+    %% Post-login redirect decision
+    User->>Client: interacts with login page
+    Client->>APIGW: POST /auth/login
+    APIGW->>Auth: Forward
+    Auth->>DB: SELECT role mapping for user
+    Auth->>TokenSvc: Issue token including role claim
+    TokenSvc-->>Auth: token
+    Auth-->>Client: 200 {token, role, redirect_url}
+    Client->>User: redirect to role dashboard (redirect_url)
+
+    %% Protected resource access
+    User->>AppSvc: GET /protected/resource (with token)
+    AppSvc->>TokenSvc: validate token signature & expiry
+    TokenSvc-->>AppSvc: {valid, claims}
+    alt token valid and role in claims allowed
+      AppSvc-->>User: 200 resource
+      AppSvc->>Monitoring: emit auth success event
+    else invalid token or insufficient role
+      AppSvc-->>User: 401/403 Unauthorized
+      AppSvc->>Monitoring: emit auth failure event
+    end
+```
+
+---
