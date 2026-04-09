@@ -1,0 +1,19 @@
+{
+  "fidelity": "high",
+  "fidelity_folder": "Hi-Fi",
+  "screen_count": 5,
+  "files_generated": [
+    "information_architecture",
+    "component_inventory",
+    "navigation_map",
+    "design_tokens_applied",
+    "SCR-001-login",
+    "SCR-002-forgot-password",
+    "SCR-003-reset-password",
+    "SCR-004-reset-confirmation",
+    "SCR-005-account-locked"
+  ],
+  "info_arch_length": 1681,
+  "comp_inv_length": 853,
+  "nav_map_length": 906
+}
