@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SCR-004 — Password Reset Confirmation</title>
+  <style>
+    /* Design tokens */
+    :root{
+      --color-primary: #007BFF;
+      --color-primary-700: #0056B3;
+      --color-bg: #F7F9FC;
+      --color-surface: #FFFFFF;
+      --color-muted: #6B7280;
+      --color-success: #16A34A;
+      --color-danger: #DC2626;
+      --font-heading: "InterVariable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --font-body: "InterVariable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --space: 8px;
+      --radius-md: 10px;
+      --shadow-sm: 0 1px 2px rgba(16,24,40,0.04);
+      --shadow-md: 0 8px 24px rgba(16,24,40,0.08);
+    }
+
+    /* Reset & base */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: linear-gradient(180deg, var(--color-bg), #EEF3FA 60%);
+      font-family: var(--font-body);
+      color:#0f172a;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding: calc(var(--space) * 4);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* Shell */
+    .shell{
+      width:100%;
+      max-width:920px;
+      background:var(--color-surface);
+      border-radius: calc(var(--radius-md));
+      box-shadow: var(--shadow-md);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      border: 1px solid rgba(15,23,42,0.04);
+    }
+
+    header.app-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: calc(var(--space) * 3);
+      gap: calc(var(--space) * 2);
+      background: linear-gradient(90deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+      border-bottom: 1px solid rgba(15,23,42,0.04);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap: calc(var(--space) * 2);
+    }
+
+    .logo{
+      width:44px;
+      height:44px;
+      border-radius:8px;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-700));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-weight:700;
+      font-family:var(--font-heading);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .app-title{
+      font-size: 16px;
+      font-weight:600;
+      color:#071133;
+    }
+
+    nav.header-nav{
+      display:flex;
+      gap: calc(var(--space) * 2);
+      align-items:center;
+    }
+
+    nav.header-nav a{
+      text-decoration:none;
+      color:var(--color-muted);
+      font-size:13px;
+      padding:6px 10px;
+      border-radius:8px;
+    }
+
+    nav.header-nav a.active{
+      color:var(--color-primary-700);
+      background: rgba(0,123,255,0.06);
+      border: 1px solid rgba(0,123,255,0.06);
+    }
+
+    /* Main content */
+    main.container{
+      padding: calc(var(--space) * 6);
+      display:flex;
+      gap: calc(var(--space) * 6);
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+
+    .hero{
+      flex:1 1 420px;
+      min-width:280px;
+      display:flex;
+      gap: calc(var(--space) * 4);
+      align-items:flex-start;
+    }
+
+    .visual{
+      width:96px;
+      height:96px;
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(0,123,255,0.08), rgba(0,123,255,0.04));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: var(--shadow-sm);
+      flex-shrink:0;
+    }
+
+    .visual svg{width:56px;height:56px;display:block}
+
+    .content{
+      flex:1;
+      min-width:220px;
+    }
+
+    h1{
+      margin:0 0 calc(var(--space) * 2) 0;
+      font-family:var(--font-heading);
+      font-size:20px;
+      color:#071133;
+      line-height:1.25;
+    }
+
+    p.lead{
+      margin:0 0 calc(var(--space) * 3) 0;
+      color:var(--color-muted);
+      font-size:15px;
+    }
+
+    /* CTA area */
+    .cta{
+      display:flex;
+      gap: calc(var(--space) * 2);
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding: calc(var(--space) * 2) calc(var(--space) * 4);
+      border-radius:10px;
+      font-weight:600;
+      text-decoration:none;
+      border: none;
+      cursor:pointer;
+      font-size:15px;
+    }
+
+    .btn-primary{
+      background: linear-gradient(180deg, var(--color-primary), var(--color-primary-700));
+      color: white;
+      box-shadow: 0 6px 18px rgba(0,123,255,0.14);
+    }
+
+    .btn-primary[aria-busy="true"]{
+      opacity:0.85;
+      pointer-events:none;
+    }
+
+    .support-link{
+      font-size:14px;
+      color:var(--color-muted);
+      text-decoration:none;
+      padding:6px 8px;
+    }
+
+    .support-link:hover{color:var(--color-primary-700)}
+
+    /* Status messages */
+    .status{
+      margin-top: calc(var(--space) * 3);
+      display:flex;
+      gap:calc(var(--space) * 2);
+      align-items:flex-start;
+    }
+
+    .status .bubble{
+      padding: calc(var(--space) * 2);
+      border-radius:8px;
+      background: #F8FAFC;
+      border:1px solid rgba(15,23,42,0.03);
+      color: var(--color-muted);
+      font-size:14px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .status .bubble.error{
+      background: #FFF1F2;
+      border-color: rgba(220,38,38,0.08);
+      color: var(--color-danger);
+    }
+
+    .status .bubble.empty{
+      background: #FFF7ED;
+      border-color: rgba(245,158,11,0.06);
+      color: #92400E;
+    }
+
+    /* Right column: state panel for prototype-only */
+    .panel{
+      width:320px;
+      min-width:260px;
+      padding: calc(var(--space) * 4);
+      border-left:1px dashed rgba(15,23,42,0.04);
+      background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+    }
+
+    .panel h3{
+      margin:0 0 calc(var(--space) * 2) 0;
+      font-size:14px;
+      color:#071133;
+      font-weight:700;
+    }
+
+    .state-control{
+      display:flex;
+      flex-direction:column;
+      gap: calc(var(--space) * 2);
+      margin-bottom: calc(var(--space) * 3);
+    }
+
+    select, .switch{
+      font-size:14px;
+      padding:10px;
+      border-radius:8px;
+      border:1px solid rgba(15,23,42,0.06);
+      background:white;
+    }
+
+    .muted{
+      font-size:13px;
+      color:var(--color-muted);
+    }
+
+    /* Loading overlay */
+    .overlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background: linear-gradient(180deg, rgba(15,23,42,0.08), rgba(15,23,42,0.12));
+      z-index:60;
+    }
+
+    .overlay.active{display:flex}
+
+    .spinner{
+      width:56px;height:56px;border-radius:50%;
+      display:inline-grid;place-items:center;
+      background:linear-gradient(180deg,#fff, #f3f7ff);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* small helpers */
+    .small{font-size:13px;color:var(--color-muted)}
+    .mt-2{margin-top: calc(var(--space) * 2)}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+    /* Responsive */
+    @media (max-width:820px){
+      .shell{max-width:720px}
+      main.container{padding: calc(var(--space) * 4)}
+      .panel{display:none}
+    }
+
+    @media (max-width:520px){
+      body{padding: calc(var(--space) * 2)}
+      .brand .app-title{font-size:14px}
+      .visual{width:72px;height:72px;border-radius:12px}
+      .hero{gap: calc(var(--space) * 2)}
+      .btn{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <div class="shell" role="application" aria-labelledby="page-title">
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">PW</div>
+        <div>
+          <div class="app-title">Acme Account</div>
+          <div class="small" style="margin-top:4px;color:var(--color-muted)">Security & Access</div>
+        </div>
+      </div>
+
+      <nav class="header-nav" aria-label="Screens">
+        <a href="wireframe-SCR-001-login.html" class="active">Login (SCR-001)</a>
+        <a href="wireframe-SCR-002-forgot-password.html">Forgot (SCR-002)</a>
+        <a href="wireframe-SCR-003-reset-password.html">Reset Form (SCR-003)</a>
+        <a href="wireframe-SCR-005-account-locked.html">Account Locked (SCR-005)</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="visual" aria-hidden="true">
+          <!-- Success / Info icon -->
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="#DFF6FF"/>
+                <stop offset="1" stop-color="#E9F2FF"/>
+              </linearGradient>
+            </defs>
+            <rect width="24" height="24" rx="6" fill="url(#g1)"/>
+            <path d="M8.5 12.5l2.5 2.5 4.5-6" stroke="#007BFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <div class="content">
+          <h1 id="page-title">Password reset request received</h1>
+          <p class="lead" id="lead-copy">
+            If an account exists for the email you provided, we'll send a message with instructions to reset your password.
+            For your security, we don't disclose whether the address is registered.
+          </p>
+
+          <div class="cta" role="region" aria-label="Primary actions">
+            <a href="wireframe-SCR-001-login.html" class="btn btn-primary" id="back-login" role="button">Back to login</a>
+            <a href="mailto:support@acme.example?subject=Password%20Help" class="support-link" id="contact-support">Contact support</a>
+          </div>
+
+          <div class="status" id="status-area" aria-live="polite" aria-atomic="true">
+            <div class="bubble" id="status-bubble">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#E6F2FF"/><path d="M16 8l-6.5 6L8 12.5" stroke="#007BFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div>
+                <div style="font-weight:600;color:#071133">We've sent instructions</div>
+                <div class="small">Check your inbox for an email with further steps. It may take a few minutes to arrive.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Prototype-only panel to toggle states -->
+      <aside class="panel" aria-hidden="false">
+        <h3>Prototype: UI States</h3>
+        <div class="state-control">
+          <label class="small" for="state-select">Select state</label>
+          <select id="state-select" aria-controls="status-area">
+            <option value="default">default</option>
+            <option value="loading">loading</option>
+            <option value="empty">empty</option>
+            <option value="error">error</option>
+            <option value="validation">validation</option>
+          </select>
+
+          <div>
+            <div class="small muted">Notes</div>
+            <div class="small mt-2 muted">
+              - default: non-revealing confirmation copy.<br>
+              - loading: shows activity and disables primary CTA.<br>
+              - empty: minimal/empty state for missing content.<br>
+              - error: generic non-revealing error message.<br>
+              - validation: shows form-like validation guidance.
+            </div>
+          </div>
+
+        </div>
+
+        <div style="border-top:1px dashed rgba(15,23,42,0.04);padding-top:12px">
+          <div class="small muted">Quick links</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <a class="support-link" href="wireframe-SCR-001-login.html">Login</a>
+            <a class="support-link" href="wireframe-SCR-002-forgot-password.html">Forgot</a>
+            <a class="support-link" href="wireframe-SCR-003-reset-password.html">Reset</a>
+            <a class="support-link" href="wireframe-SCR-005-account-locked.html">Locked</a>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Loading overlay -->
+  <div class="overlay" id="overlay" role="status" aria-hidden="true">
+    <div class="spinner" aria-hidden="true">
+      <svg viewBox="0 0 50 50" width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="25" cy="25" r="20" fill="none" stroke="#E6F0FF" stroke-width="6"/>
+        <path d="M45 25a20 20 0 0 1-20 20" fill="none" stroke="#007BFF" stroke-width="6" stroke-linecap="round">
+          <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite"/>
+        </path>
+      </svg>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var stateSelect = document.getElementById('state-select');
+      var overlay = document.getElementById('overlay');
+      var backLogin = document.getElementById('back-login');
+      var statusArea = document.getElementById('status-area');
+      var statusBubble = document.getElementById('status-bubble');
+      var leadCopy = document.getElementById('lead-copy');
+      var contactSupport = document.getElementById('contact-support');
+
+      function setState(state){
+        // Reset defaults
+        overlay.classList.remove('active');
+        backLogin.removeAttribute('aria-busy');
+        backLogin.style.pointerEvents = '';
+        statusBubble.className = 'bubble';
+        statusBubble.innerHTML = [
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#E6F2FF"/><path d="M16 8l-6.5 6L8 12.5" stroke="#007BFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+          '<div><div style="font-weight:600;color:#071133">We\\'ve sent instructions</div>',
+          '<div class="small">Check your inbox for an email with further steps. It may take a few minutes to arrive.</div></div>'
+        ].join('');
+
+        // Default copy
+        leadCopy.textContent = "If an account exists for the email you provided, we'll send a message with instructions to reset your password. For your security, we don't disclose whether the address is registered.";
+
+        switch(state){
+          case 'loading':
+            // show overlay, disable CTA
+            overlay.classList.add('active');
+            overlay.setAttribute('aria-hidden','false');
+            backLogin.setAttribute('aria-busy','true');
+            // Also update status bubble to indicate processing
+            statusBubble.innerHTML = [
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#FFF"/><path d="M12 2a10 10 0 0 0 0 20" stroke="#007BFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+              '<div><div style="font-weight:600;color:#071133">Processing request</div>',
+              '<div class="small">Sending instructions — this may take a moment.</div></div>'
+            ].join('');
+            break;
+
+          case 'empty':
+            // Minimal/empty state
+            statusBubble.className = 'bubble empty';
+            statusBubble.innerHTML = [
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="#FFF7ED"/><path d="M7 12h10" stroke="#92400E" stroke-width="1.6" stroke-linecap="round"/></svg>',
+              '<div><div style="font-weight:600;color:#92400E">No new messages</div>',
+              '<div class="small">We haven\\'t queued any messages for this address. Try again or contact support.</div></div>'
+            ].join('');
+            leadCopy.textContent = "We couldn't find any activity related to this request. If you think this is an error, contact support for help.";
+            break;
+
+          case 'error':
+            // Generic error — non-revealing
+            statusBubble.className = 'bubble error';
+            statusBubble.innerHTML = [
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="#FFF1F2"/><path d="M8 8l8 8M16 8l-8 8" stroke="#DC2626" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+              '<div><div style="font-weight:600;color:#DC2626">Unable to complete request</div>',
+              '<div class="small">Something went wrong. Please try again later or contact support for assistance.</div></div>'
+            ].join('');
+            leadCopy.textContent = "We were unable to process your request at this time. For assistance, contact support.";
+            break;
+
+          case 'validation':
+            // Show validation-style guidance (even though no form here)
+            statusBubble.className = 'bubble';
+            statusBubble.innerHTML = [
+              '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="#EFF6FF"/><path d="M12 7v6" stroke="#007BFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="16" r="1" fill="#007BFF"/></svg>',
+              '<div><div style="font-weight:600;color:#071133">Invalid request</div>',
+              '<div class="small">Enter a valid email address to receive password reset instructions.</div></div>'
+            ].join('');
+            leadCopy.textContent = "Please make sure you entered the correct email address on the previous screen and try again.";
+            break;
+
+          default:
+            // default state already set above
+            break;
+        }
+      }
+
+      // Initialize default
+      setState(stateSelect.value);
+
+      // Attach listener
+      stateSelect.addEventListener('change', function(e){
+        setState(e.target.value);
+      });
+
+      // Accessibility: hide overlay from screen readers unless active
+      var observer = new MutationObserver(function(m){
+        overlay.setAttribute('aria-hidden', overlay.classList.contains('active') ? 'false' : 'true');
+      });
+      observer.observe(overlay, {attributes:true});
+
+      // For demo: clicking support will open mailto; no further handling required.
+    })();
+  </script>
+</body>
+</html>
