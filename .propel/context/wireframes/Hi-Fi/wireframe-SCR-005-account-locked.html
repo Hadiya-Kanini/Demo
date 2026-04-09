@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Account Locked — Lockout Guidance — SCR-005</title>
+  <style>
+    /*
+      Design tokens
+    */
+    :root{
+      --primary-color: #007BFF;
+      --primary-600: #0056B3;
+      --bg: #F6F8FB;
+      --surface: #FFFFFF;
+      --muted: #667085;
+      --danger: #D92D20;
+      --success: #0F9D58;
+      --shadow: 0 8px 24px rgba(16,24,40,0.08);
+      --font-heading: "InterVariable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --font-body: "InterVariable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --spacing: 8px;
+      --radius: 12px;
+      --glass: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.6));
+    }
+
+    /* Reset & base */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--font-body);
+      background: linear-gradient(180deg, #F8FAFF, #F6F8FB);
+      color:#0F1724;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding: calc(var(--spacing) * 4);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* Container */
+    .frame{
+      width:100%;
+      max-width:980px;
+      background:var(--surface);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      border:1px solid rgba(15,23,36,0.04);
+      display:flex;
+      flex-direction:column;
+    }
+
+    header.app-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: calc(var(--spacing) * 3);
+      gap: calc(var(--spacing) * 2);
+      border-bottom:1px solid rgba(15,23,36,0.04);
+      background: linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.4));
+    }
+
+    .brand{
+      display:flex;
+      gap: calc(var(--spacing) * 2);
+      align-items:center;
+    }
+    .logo{
+      width:48px;
+      height:48px;
+      border-radius:10px;
+      background:conic-gradient(from 180deg at 50% 50%, var(--primary-color), var(--primary-600));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-weight:600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      flex:0 0 48px;
+    }
+    .brand h1{
+      margin:0;
+      font-size:16px;
+      line-height:1;
+      font-weight:600;
+      font-family:var(--font-heading);
+    }
+    .brand p{
+      margin:0;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    nav.top-nav{
+      display:flex;
+      gap: calc(var(--spacing) * 1.25);
+      align-items:center;
+    }
+    nav.top-nav a{
+      text-decoration:none;
+      font-size:13px;
+      color:var(--muted);
+      padding:6px 10px;
+      border-radius:8px;
+    }
+    nav.top-nav a[href$="SCR-005"]{
+      color:var(--primary-600);
+      background:rgba(0,123,255,0.06);
+    }
+
+    /* Main content */
+    .content{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap: calc(var(--spacing) * 4);
+      padding: calc(var(--spacing) * 4);
+      align-items:start;
+    }
+
+    /* Left column */
+    .panel{
+      background:var(--glass);
+      border-radius:12px;
+      padding: calc(var(--spacing) * 4);
+      box-shadow: none;
+      border:1px solid rgba(15,23,36,0.03);
+    }
+
+    .lockout-banner{
+      display:flex;
+      gap: calc(var(--spacing) * 3);
+      align-items:flex-start;
+    }
+    .lock-icon{
+      width:56px;
+      height:56px;
+      border-radius:12px;
+      background:linear-gradient(180deg, rgba(0,123,255,0.12), rgba(0,86,179,0.08));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 56px;
+      border:1px solid rgba(0,123,255,0.08);
+    }
+    .lock-icon svg{width:28px;height:28px; color:var(--primary-600);}
+
+    .lockout-content h2{
+      margin:0;
+      font-size:18px;
+      font-weight:700;
+      font-family:var(--font-heading);
+      color:#0B1A3A;
+    }
+    .lockout-content p{
+      margin:8px 0 0 0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.45;
+      max-width:60ch;
+    }
+
+    /* TTL info */
+    .ttl-card{
+      margin-top: calc(var(--spacing) * 4);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: calc(var(--spacing) * 2);
+      padding: calc(var(--spacing) * 3);
+      border-radius:10px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.5));
+      border:1px dashed rgba(15,23,36,0.04);
+    }
+    .ttl-left{
+      display:flex;
+      gap: calc(var(--spacing) * 2);
+      align-items:center;
+    }
+    .ttl-clock{
+      width:44px;height:44px;border-radius:10px;background:rgba(0,123,255,0.06);display:flex;align-items:center;justify-content:center;
+      color:var(--primary-600);font-weight:600;
+    }
+    .ttl-info{
+      display:flex;
+      flex-direction:column;
+    }
+    .ttl-info .label{font-size:12px;color:var(--muted)}
+    .ttl-info .value{font-size:16px;font-weight:700;color:#0B1A3A;margin-top:4px}
+
+    .ttl-actions{
+      display:flex;
+      gap: calc(var(--spacing) * 2);
+      align-items:center;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:10px 14px;
+      border-radius:10px;
+      border:none;
+      background:var(--primary-color);
+      color:white;
+      font-weight:600;
+      font-size:14px;
+      cursor:pointer;
+      text-decoration:none;
+    }
+    .btn.secondary{
+      background:transparent;
+      border:1px solid rgba(15,23,36,0.06);
+      color:var(--primary-600);
+    }
+    .btn.ghost{
+      background:transparent;
+      color:var(--primary-600);
+      border:1px dashed rgba(0,123,255,0.08);
+    }
+
+    /* Right column: recovery options */
+    .side{
+      display:flex;
+      flex-direction:column;
+      gap: calc(var(--spacing) * 3);
+    }
+    .card{
+      background:var(--surface);
+      border-radius:12px;
+      padding: calc(var(--spacing) * 3);
+      border:1px solid rgba(15,23,36,0.03);
+      box-shadow: 0 6px 18px rgba(15,23,36,0.03);
+    }
+    .card h3{margin:0;font-size:15px;font-weight:700;font-family:var(--font-heading)}
+    .card p{margin:8px 0 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+
+    .option-list{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+    .option{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px;
+      border-radius:10px;
+      border:1px solid rgba(15,23,36,0.04);
+      background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.5));
+    }
+    .option .meta{display:flex;gap:12px;align-items:center}
+    .option .meta .icon{
+      width:40px;height:40px;border-radius:8px;background:rgba(99,102,241,0.06);display:flex;align-items:center;justify-content:center;color:#6C63FF;font-weight:700;
+    }
+    .option .meta .title{font-weight:600;font-size:14px}
+    .option .meta .desc{font-size:12px;color:var(--muted)}
+    .option a{font-weight:700;color:var(--primary-color);text-decoration:none}
+
+    .admin-info{
+      margin-top:8px;
+      font-size:13px;color:var(--muted);
+      background:linear-gradient(180deg, rgba(0,123,255,0.03), transparent);
+      padding:10px;border-radius:8px;border:1px dashed rgba(0,123,255,0.06)
+    }
+
+    /* status messages */
+    .status{
+      margin-top:16px;
+      padding:12px;border-radius:10px;font-size:13px;
+    }
+    .status.error{background:rgba(217,45,32,0.06);color:var(--danger);border:1px solid rgba(217,45,32,0.08)}
+    .status.success{background:rgba(15,157,88,0.06);color:var(--success);border:1px solid rgba(15,157,88,0.08)}
+    .status.info{background:rgba(0,123,255,0.06);color:var(--primary-600);border:1px solid rgba(0,123,255,0.08)}
+
+    /* modal (admin unlock) */
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(4,6,11,0.4);display:none;align-items:center;justify-content:center;padding:24px;
+    }
+    .modal{
+      width:100%;max-width:560px;background:var(--surface);border-radius:14px;padding:20px;border:1px solid rgba(15,23,36,0.05);
+      box-shadow: 0 20px 50px rgba(16,24,40,0.48);
+    }
+    .modal h4{margin:0 0 6px 0;font-size:16px}
+    .modal p{margin:0 0 12px 0;color:var(--muted);font-size:13px}
+    .field{display:flex;flex-direction:column;gap:8px}
+    .input, textarea{
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(15,23,36,0.06);
+      font-size:14px;
+      font-family:var(--font-body);
+      resize:vertical;
+      min-height:44px;
+      background:white;
+    }
+    .modal-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:12px}
+    .hint{font-size:12px;color:var(--muted)}
+
+    /* spinner */
+    .spinner{
+      width:20px;height:20px;border-radius:50%;
+      border:3px solid rgba(0,0,0,0.08);
+      border-top-color:var(--primary-color);
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* state switcher */
+    .state-switcher{display:flex;gap:8px;align-items:center}
+    .state-switcher select{padding:8px;border-radius:8px;border:1px solid rgba(15,23,36,0.06);background:white;font-size:13px}
+
+    /* small responsive */
+    @media (max-width:880px){
+      .content{grid-template-columns:1fr; padding:20px}
+      .side{order:2}
+      .panel{order:1}
+    }
+  </style>
+</head>
+<body>
+  <div class="frame" role="main" aria-labelledby="pageTitle">
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">LS</div>
+        <div>
+          <h1 id="pageTitle">Account Locked</h1>
+          <p>Lockout guidance & recovery options</p>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:center">
+        <nav class="top-nav" aria-label="Primary">
+          <a href="wireframe-SCR-001-login.html">Login</a>
+          <a href="wireframe-SCR-002-forgot-password.html">Forgot Password</a>
+          <a href="wireframe-SCR-003-reset-password.html">Reset Password</a>
+          <a href="wireframe-SCR-004-reset-confirmation.html">Reset Confirmation</a>
+          <a href="wireframe-SCR-005-account-locked.html">Account Locked</a>
+        </nav>
+
+        <div class="state-switcher" aria-hidden="false" title="Preview states">
+          <label for="stateSelect" style="font-size:13px;color:var(--muted);margin-right:6px">State</label>
+          <select id="stateSelect" aria-label="Select state">
+            <option value="default">default</option>
+            <option value="loading">loading</option>
+            <option value="empty">empty</option>
+            <option value="error">error</option>
+            <option value="validation">validation</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="panel" aria-labelledby="lockoutHeading">
+        <div class="lockout-banner" id="mainBanner">
+          <div class="lock-icon" aria-hidden="true">
+            <!-- lock svg -->
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 10V8a5 5 0 0110 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+          </div>
+
+          <div class="lockout-content">
+            <h2 id="lockoutHeading">Your account is temporarily locked</h2>
+            <p id="leadText">We've put a temporary lock on sign-in attempts for this account. This helps protect you from unauthorized access. Below are safe ways to regain access without exposing account details.</p>
+
+            <div class="ttl-card" id="ttlCard" role="status" aria-live="polite">
+              <div class="ttl-left">
+                <div class="ttl-clock" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="ttl-info">
+                  <div class="label">Estimated lockout remaining</div>
+                  <div class="value" id="ttlValue">15:00</div>
+                </div>
+              </div>
+
+              <div class="ttl-actions" id="ttlActions">
+                <button class="btn secondary" id="refreshBtn" title="Refresh TTL">Refresh</button>
+                <a href="wireframe-SCR-002-forgot-password.html" class="btn">Forgot password</a>
+              </div>
+            </div>
+
+            <div id="statusMessageArea" style="margin-top:14px"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:calc(var(--spacing) * 5)" id="moreInfo">
+          <h3 style="margin:0 0 8px 0;font-size:15px">What you can do</h3>
+          <p style="margin:0;color:var(--muted);font-size:13px">Choose an option below. We avoid sharing specific lockout causes publicly to protect account security.</p>
+
+          <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap">
+            <a href="wireframe-SCR-002-forgot-password.html" class="btn" style="min-width:170px">Start recovery</a>
+            <button class="btn ghost" id="contactSupportBtn" style="min-width:170px">Contact support</button>
+          </div>
+
+          <div id="extraStatus" style="margin-top:12px"></div>
+        </div>
+      </section>
+
+      <aside class="side" aria-label="Recovery options">
+        <div class="card" id="recoveryCard">
+          <h3>Recovery options</h3>
+          <p>Recommended, safe paths to restore access without revealing account details.</p>
+
+          <div class="option-list">
+            <div class="option" id="optForgot">
+              <div class="meta">
+                <div class="icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 11v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" stroke="currentColor" stroke-width="1.6"/></svg>
+                </div>
+                <div>
+                  <div class="title">Forgot password</div>
+                  <div class="desc">Request a reset link or code — secure verification required.</div>
+                </div>
+              </div>
+              <a href="wireframe-SCR-002-forgot-password.html">Start</a>
+            </div>
+
+            <div class="option" id="optSupport">
+              <div class="meta">
+                <div class="icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10l5-3 5 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div>
+                  <div class="title">Contact support</div>
+                  <div class="desc">Support can guide you through verification. Account details remain protected.</div>
+                </div>
+              </div>
+              <a href="#" id="supportLink">Contact</a>
+            </div>
+
+            <div class="option" id="optAdmin">
+              <div class="meta">
+                <div class="icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12v.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 20v-6a2 2 0 00-2-2h-1V8a4 4 0 10-8 0v4H7a2 2 0 00-2 2v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div>
+                  <div class="title">Admin unlock</div>
+                  <div class="desc">If your organization manages accounts, an admin can unlock it on approval.</div>
+                </div>
+              </div>
+              <button class="btn secondary" id="adminUnlockBtn">Request admin unlock</button>
+            </div>
+          </div>
+
+          <div class="admin-info" id="adminInfo">
+            Tip: If your account is managed by your organization, contact your administrator with your user ID. For privacy, we do not display sensitive account details here.
+          </div>
+        </div>
+
+        <div class="card" id="helpCard" style="padding-top:16px">
+          <h3>Additional guidance</h3>
+          <p style="margin-top:8px">If you need immediate help, use the Contact support option. For admin-managed accounts, your administrator can perform an unlock after identity verification.</p>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <a href="wireframe-SCR-001-login.html" class="btn secondary" style="min-width:120px">Back to login</a>
+            <a href="wireframe-SCR-004-reset-confirmation.html" class="btn ghost" style="min-width:160px">View reset confirmation</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- modal: admin unlock -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal" role="document" aria-labelledby="modalTitle">
+      <h4 id="modalTitle">Request admin unlock</h4>
+      <p>Please provide a brief reason so your administrator can verify and prioritize your request. We will not display account identifiers here.</p>
+
+      <div class="field" style="margin-top:10px">
+        <label for="reason" class="hint">Reason (required)</label>
+        <textarea id="reason" placeholder="e.g., Unable to sign in after multiple attempts" aria-required="true"></textarea>
+        <div id="reasonError" style="display:none;color:var(--danger);font-size:13px">Please provide a reason to continue.</div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn secondary" id="cancelModal">Cancel</button>
+        <button class="btn" id="submitAdmin">Send request</button>
+      </div>
+
+      <div id="modalStatus" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <script>
+    // State handling & interactive behaviors
+    (function(){
+      const stateSelect = document.getElementById('stateSelect');
+      const ttlValue = document.getElementById('ttlValue');
+      const ttlCard = document.getElementById('ttlCard');
+      const ttlActions = document.getElementById('ttlActions');
+      const statusArea = document.getElementById('statusMessageArea');
+      const extraStatus = document.getElementById('extraStatus');
+      const modalBackdrop = document.getElementById('modalBackdrop');
+      const adminUnlockBtn = document.getElementById('adminUnlockBtn');
+      const contactSupportBtn = document.getElementById('contactSupportBtn');
+      const supportLink = document.getElementById('supportLink');
+      const refreshBtn = document.getElementById('refreshBtn');
+      const reasonInput = document.getElementById('reason');
+      const reasonError = document.getElementById('reasonError');
+      const submitAdmin = document.getElementById('submitAdmin');
+      const cancelModal = document.getElementById('cancelModal');
+      const modalStatus = document.getElementById('modalStatus');
+
+      let ttlSeconds = 15 * 60; // default 15 minutes
+      let ttlInterval = null;
+
+      function formatMMSS(s){
+        if (s < 0) s = 0;
+        const m = Math.floor(s/60).toString().padStart(2,'0');
+        const sec = (s%60).toString().padStart(2,'0');
+        return `${m}:${sec}`;
+      }
+
+      function startCountdown(){
+        stopCountdown();
+        ttlValue.textContent = formatMMSS(ttlSeconds);
+        ttlInterval = setInterval(()=>{
+          ttlSeconds = Math.max(0, ttlSeconds - 1);
+          ttlValue.textContent = formatMMSS(ttlSeconds);
+          if(ttlSeconds===0){
+            stopCountdown();
+            showStatus('info','The automated lockout period has ended. Try signing in again or use recovery options.');
+          }
+        },1000);
+      }
+      function stopCountdown(){ if(ttlInterval) {clearInterval(ttlInterval); ttlInterval = null;} }
+
+      function clearStatus(){
+        statusArea.innerHTML = '';
+        extraStatus.innerHTML = '';
+      }
+
+      function showStatus(type, text){
+        clearStatus();
+        const div = document.createElement('div');
+        div.className = 'status ' + (type==='error'?'error':(type==='success'?'success':'info'));
+        div.textContent = text;
+        statusArea.appendChild(div);
+      }
+
+      function applyState(state){
+        clearStatus();
+        // reset modal and fields
+        reasonInput.value = '';
+        reasonError.style.display = 'none';
+        modalStatus.innerHTML = '';
+        modalBackdrop.style.display = 'none';
+        modalBackdrop.setAttribute('aria-hidden','true');
+
+        switch(state){
+          case 'default':
+            ttlSeconds = 15 * 60;
+            startCountdown();
+            ttlCard.style.opacity = '1';
+            ttlActions.style.display = 'flex';
+            document.getElementById('leadText').textContent = 'We\'ve put a temporary lock on sign-in attempts for this account. This helps protect you from unauthorized access. Below are safe ways to regain access without exposing account details.';
+            break;
+
+          case 'loading':
+            // Show loading overlay in ttl area and disable actions
+            stopCountdown();
+            ttlValue.textContent = '—';
+            ttlCard.style.opacity = '0.6';
+            ttlActions.style.display = 'flex';
+            showStatus('info','Checking status…');
+            // simulate loading then revert to default
+            setTimeout(()=>{
+              applyState('default');
+              showStatus('success','Status refreshed.');
+            },1800);
+            break;
+
+          case 'empty':
+            // TTL not available, fewer options
+            stopCountdown();
+            ttlValue.textContent = 'Not available';
+            ttlCard.style.opacity = '1';
+            ttlActions.style.display = 'none';
+            document.getElementById('leadText').textContent = 'We cannot determine a lockout duration at this time. Please try recovery options or contact support.';
+            extraStatus.innerHTML = '<div class="status info">Lockout duration unavailable — use recovery or contact support.</div>';
+            break;
+
+          case 'error':
+            // show an error state: unable to process requests
+            stopCountdown();
+            ttlValue.textContent = '—';
+            ttlCard.style.opacity = '0.9';
+            ttlActions.style.display = 'flex';
+            showStatus('error','We were unable to verify lockout status. Try again or contact support.');
+            break;
+
+          case 'validation':
+            // emulate validation: admin unlock requires a reason
+            ttlSeconds = 12 * 60;
+            startCountdown();
+            ttlActions.style.display = 'flex';
+            document.getElementById('leadText').textContent = 'Requesting an admin unlock requires a short reason for verification. Empty requests will be rejected.';
+            extraStatus.innerHTML = '<div class="status info">Try "Request admin unlock" to see validation behavior.</div>';
+            break;
+        }
+      }
+
+      // initial state
+      applyState('default');
+
+      stateSelect.addEventListener('change', (e)=> applyState(e.target.value));
+
+      refreshBtn.addEventListener('click', ()=>{
+        applyState('loading');
+      });
+
+      // support button opens mailto but also demonstrates loading/error
+      contactSupportBtn.addEventListener('click', ()=>{
+        // simulate opening a support flow
+        showStatus('info','Opening support request…');
+        setTimeout(()=>{
+          // reveal a friendly success message with contact link (non-revealing)
+          modalStatus.innerHTML = '';
+          showStatus('success','Support request draft opened in your email client.');
+          window.location.href = 'mailto:support@example.com?subject=Account%20lockout%20assistance';
+        },900);
+      });
+
+      supportLink.addEventListener('click', (e)=>{
+        e.preventDefault();
+        contactSupportBtn.click();
+      });
+
+      // admin unlock modal handling
+      adminUnlockBtn.addEventListener('click', ()=> {
+        modalBackdrop.style.display = 'flex';
+        modalBackdrop.setAttribute('aria-hidden','false');
+      });
+
+      cancelModal.addEventListener('click', ()=>{
+        modalBackdrop.style.display = 'none';
+        modalBackdrop.setAttribute('aria-hidden','true');
+        reasonError.style.display = 'none';
+        modalStatus.innerHTML = '';
+      });
+
+      submitAdmin.addEventListener('click', ()=>{
+        reasonError.style.display = 'none';
+        modalStatus.innerHTML = '';
+        const val = reasonInput.value.trim();
+        if(!val){
+          reasonError.style.display = 'block';
+          // reflect validation state globally
+          applyState('validation');
+          return;
+        }
+        // show loading then success
+        modalStatus.innerHTML = '<div class="status info" style="margin:0">Sending request… <span class="spinner" style="margin-left:8px;vertical-align:middle"></span></div>';
+        submitAdmin.disabled = true;
+        setTimeout(()=>{
+          submitAdmin.disabled = false;
+          modalStatus.innerHTML = '<div class="status success" style="margin:0">Request sent to your administrator. They will contact you after verification.</div>';
+          // also show global success
+          showStatus('success','Admin unlock requested. Check your organization email for follow-up.');
+          setTimeout(()=>{
+            modalBackdrop.style.display = 'none';
+            modalBackdrop.setAttribute('aria-hidden','true');
+            modalStatus.innerHTML = '';
+            reasonInput.value = '';
+          },1400);
+        },1400);
+      });
+
+      // close modal when clicking outside
+      modalBackdrop.addEventListener('click', (e)=>{
+        if(e.target === modalBackdrop){
+          modalBackdrop.style.display = 'none';
+          modalBackdrop.setAttribute('aria-hidden','true');
+        }
+      });
+
+      // small accessibility: keyboard handler for ESC to close modal
+      document.addEventListener('keydown', (e)=>{
+        if(e.key === 'Escape'){
+          if(modalBackdrop.style.display === 'flex'){
+            modalBackdrop.style.display = 'none';
+            modalBackdrop.setAttribute('aria-hidden','true');
+          }
+        }
+      });
+
+      // Expose applyState globally for quick console testing
+      window.__applyLockoutState = applyState;
+    })();
+  </script>
+</body>
+</html>
