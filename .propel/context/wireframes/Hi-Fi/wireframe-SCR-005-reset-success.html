@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Password Reset Success — Wireframe SCR-005</title>
+  <style>
+    :root{
+      --primary-color: #007BFF;
+      --primary-color-hover: #0056B3;
+      --success-color: #16A34A;
+      --warning-color: #F59E0B;
+      --error-color: #DC2626;
+      --neutral-bg: #F8F9FA;
+      --text-primary: #111827;
+      --font-heading: "InterVariable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --font-body: "InterVariable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --spacing: 8px;
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --elev-1: 0 1px 2px rgba(16,24,40,0.05);
+      --motion-short: 150ms;
+      --motion-medium: 300ms;
+    }
+
+    /* Base reset */
+    * { box-sizing: border-box; }
+    html,body { height:100%; }
+    body {
+      margin:0;
+      font-family: var(--font-body);
+      background: linear-gradient(180deg, #ffffff 0%, var(--neutral-bg) 100%);
+      color: var(--text-primary);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.4;
+      font-size:16px;
+    }
+
+    /* Brand header */
+    .brand-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+      background: white;
+      box-shadow: var(--elev-1);
+      border-bottom-left-radius: var(--radius-md);
+      border-bottom-right-radius: var(--radius-md);
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+    .brand {
+      display:flex;
+      gap:calc(var(--spacing) * 2);
+      align-items:center;
+      text-decoration:none;
+      color:var(--text-primary);
+    }
+    .logo-mark {
+      width:40px;
+      height:40px;
+      border-radius:8px;
+      background:linear-gradient(135deg,var(--primary-color),var(--primary-color-hover));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-weight:700;
+      box-shadow:var(--elev-1);
+      flex:0 0 40px;
+      font-family:var(--font-heading);
+    }
+    .brand-name {
+      font-weight:600;
+      font-size:1rem;
+      letter-spacing:0.2px;
+    }
+
+    .header-nav {
+      display:flex;
+      gap: calc(var(--spacing) * 1.5);
+      align-items:center;
+      font-size:0.92rem;
+    }
+    .header-nav a {
+      color:var(--text-primary);
+      text-decoration:none;
+      padding:6px 10px;
+      border-radius:6px;
+      transition: background var(--motion-short) ease, color var(--motion-short) ease;
+    }
+    .header-nav a:hover { background: rgba(0,0,0,0.04); }
+
+    /* Page layout */
+    .page {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: calc(var(--spacing) * 6) calc(var(--spacing) * 3);
+      min-height: calc(100vh - 84px);
+    }
+
+    .card {
+      width: 720px;
+      max-width: 100%;
+      background: white;
+      border-radius: var(--radius-md);
+      box-shadow: var(--elev-1);
+      padding: calc(var(--spacing) * 4);
+      display:flex;
+      gap: calc(var(--spacing) * 4);
+      align-items:center;
+      justify-content:space-between;
+      transition: transform var(--motion-short) ease;
+    }
+    .card:focus-within { transform: translateY(-2px); }
+
+    /* Illustration column */
+    .illustration {
+      flex: 0 0 220px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .illustration .circle {
+      width:160px;
+      height:160px;
+      border-radius:50%;
+      background: linear-gradient(180deg, rgba(22,163,74,0.12), rgba(22,163,74,0.06));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+    }
+    .illustration svg {
+      width:96px;
+      height:96px;
+      display:block;
+    }
+
+    /* Content column */
+    .content {
+      flex:1;
+      padding-right: calc(var(--spacing) * 1);
+    }
+    .eyebrow {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:0.85rem;
+      color:var(--success-color);
+      font-weight:600;
+      margin-bottom: calc(var(--spacing) * 1);
+    }
+    .eyebrow .dot {
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--success-color);
+      box-shadow: 0 0 0 6px rgba(22,163,74,0.06);
+    }
+    h1 {
+      margin:0 0 calc(var(--spacing) * 1);
+      font-family: var(--font-heading);
+      font-size:1.5rem;
+      color:var(--text-primary);
+      line-height:1.15;
+    }
+    p.lead {
+      margin:0 0 calc(var(--spacing) * 2);
+      color: #334155;
+    }
+    p.small {
+      margin:0 0 calc(var(--spacing) * 2);
+      font-size:0.92rem;
+      color:#475569;
+    }
+
+    .actions {
+      display:flex;
+      gap: calc(var(--spacing) * 2);
+      align-items:center;
+      margin-top: calc(var(--spacing) * 1);
+    }
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      text-decoration:none;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-weight:600;
+      cursor:pointer;
+      transition: background var(--motion-short) ease, transform var(--motion-short) ease;
+      border: 1px solid transparent;
+      font-size:0.98rem;
+    }
+    .btn.primary {
+      background: var(--primary-color);
+      color:white;
+      box-shadow: 0 4px 10px rgba(3,102,214,0.08);
+    }
+    .btn.primary:hover { background: var(--primary-color-hover); transform: translateY(-1px); }
+    .btn.ghost {
+      background:transparent;
+      color:var(--text-primary);
+      border:1px solid rgba(16,24,40,0.06);
+    }
+    .support {
+      font-size:0.95rem;
+      color:#0f172a;
+      text-decoration:none;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+    }
+    .support:hover { text-decoration:underline; }
+
+    /* Secondary note box */
+    .note {
+      margin-top: calc(var(--spacing) * 2);
+      padding: calc(var(--spacing) * 2);
+      border-radius: var(--radius-sm);
+      background: linear-gradient(180deg, rgba(0,123,255,0.03), rgba(0,123,255,0.01));
+      border: 1px solid rgba(0,123,255,0.06);
+      color:#0f172a;
+      display:flex;
+      gap: calc(var(--spacing) * 2);
+      align-items:flex-start;
+      font-size:0.92rem;
+    }
+    .note .icon {
+      flex:0 0 36px;
+      height:36px;
+      border-radius:8px;
+      background: rgba(0,123,255,0.08);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--primary-color);
+      font-weight:700;
+    }
+
+    /* Footer helper */
+    .card-footer {
+      margin-top: calc(var(--spacing) * 2);
+      font-size:0.88rem;
+      color:#606f7b;
+    }
+
+    /* Responsive */
+    @media (max-width:760px) {
+      .card {
+        flex-direction:column;
+        padding: calc(var(--spacing) * 3);
+      }
+      .illustration { order: -1; width:100%; display:flex; margin-bottom: calc(var(--spacing) * 1); }
+      .illustration .circle { width:128px; height:128px; }
+      .content { padding-right:0; }
+      .brand-header { padding: calc(var(--spacing) * 1.25) calc(var(--spacing) * 2); }
+    }
+
+    /* Focus states */
+    a:focus, button:focus { outline:3px solid rgba(0,123,255,0.12); outline-offset:3px; }
+
+  </style>
+</head>
+<body>
+  <header class="brand-header" role="banner">
+    <a class="brand" href="wireframe-SCR-001-login.html" aria-label="Go to login">
+      <div class="logo-mark" aria-hidden="true">PW</div>
+      <div class="brand-name">PassGuard</div>
+    </a>
+
+    <nav class="header-nav" aria-label="Screens navigation">
+      <a href="wireframe-SCR-001-login.html">Login (SCR-001)</a>
+      <a href="wireframe-SCR-002-forgot-password-request.html">Forgot - Request (SCR-002)</a>
+      <a href="wireframe-SCR-003-forgot-password-confirmation.html">Reset Email Sent (SCR-003)</a>
+      <a href="wireframe-SCR-004-reset-password.html">Reset Password (SCR-004)</a>
+      <a href="wireframe-SCR-005-reset-success.html" aria-current="page" style="font-weight:700;">Reset Success (SCR-005)</a>
+    </nav>
+  </header>
+
+  <main class="page" role="main">
+    <section class="card" aria-labelledby="success-heading" role="region">
+      <div class="illustration" aria-hidden="true">
+        <div class="circle" role="img" aria-label="Success">
+          <!-- Success checkmark illustration -->
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="g1" x1="0" x2="1">
+                <stop offset="0" stop-color="#34D399"/>
+                <stop offset="1" stop-color="#16A34A"/>
+              </linearGradient>
+            </defs>
+            <circle cx="32" cy="32" r="30" fill="url(#g1)" opacity="0.12"></circle>
+            <path d="M18 34.5l8.3 7.6L46.5 22" stroke="#16A34A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="eyebrow" aria-hidden="true">
+          <span class="dot" aria-hidden="true"></span>
+          <span>Success</span>
+        </div>
+
+        <h1 id="success-heading">Your password has been updated</h1>
+
+        <p class="lead">You're all set — your new password has been saved successfully.</p>
+
+        <p class="small">
+          For security, any previous failed login attempts have been reset. You can now sign in using your updated credentials.
+        </p>
+
+        <div class="actions" role="group" aria-label="Primary actions">
+          <a class="btn primary" href="wireframe-SCR-001-login.html" aria-label="Back to login">
+            <!-- Icon -->
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 2v12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 9l5 5 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Back to login
+          </a>
+
+          <a class="support" href="mailto:support@example.com?subject=Help%20with%20Sign-in%20after%20Password%20Reset" aria-label="Contact support via email">Contact support</a>
+        </div>
+
+        <div class="note" role="note" aria-live="polite">
+          <div class="icon" aria-hidden="true">i</div>
+          <div>
+            <strong>Having trouble signing in?</strong>
+            <div style="margin-top:6px;">
+              If you still can't sign in after a few minutes, please <a href="mailto:support@example.com?subject=Cannot%20Sign%20In%20After%20Password%20Reset" class="support">contact support</a> — we'll help restore access and investigate any account issues.
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer" aria-hidden="true">
+          Tip: If you use a password manager, update the stored password to avoid future login prompts.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer style="text-align:center;padding:calc(var(--spacing) * 3);color:#94a3b8;font-size:0.92rem;">
+    <div>© <span id="year"></span> PassGuard — Security first</div>
+    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  </footer>
+</body>
+</html>
