@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+scaffold.log
+
+# Temporary files
+*.tmp
+*.bak
+backups/
+
+# Environment variables (keep .env.example)
+.env
+.env.local
+
+# Build artifacts
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Node/JS (if applicable)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Do NOT ignore .propel - we need this for context and tasks!
+# Do NOT ignore .github - we need this for CI/CD
