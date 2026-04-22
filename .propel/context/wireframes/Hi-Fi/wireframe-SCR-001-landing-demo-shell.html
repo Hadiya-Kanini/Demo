@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<!-- SCR-001: Landing / Demo Shell -->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Training Demo — Landing / Demo Shell (SCR-001)</title>
+  <style>
+    :root{
+      --primary:#007bff;
+      --bg:#f8f9fa;
+      --text:#212529;
+      --muted:#6c757d;
+      --card:#ffffff;
+      --danger:#dc3545;
+      --success:#28a745;
+      --radius:4px;
+      --space:8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --focus: 3px rgba(0,123,255,0.18);
+      --max-width:1200px;
+      --glass: rgba(255,255,255,0.6);
+    }
+
+    /* Reset & base */
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.4;
+      padding: calc(var(--space)*3);
+      display:flex;
+      justify-content:center;
+    }
+    .container{
+      width:100%;
+      max-width:var(--max-width);
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap: calc(var(--space)*3);
+      align-items:start;
+    }
+
+    header[role="banner"]{
+      grid-column: 1 / -1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:var(--space);
+      margin-bottom: calc(var(--space)*1);
+    }
+    .brand{
+      display:flex;
+      gap:var(--space);
+      align-items:center;
+    }
+    .logo{
+      width:48px;
+      height:48px;
+      background:linear-gradient(135deg,var(--primary),#0056b3);
+      border-radius:8px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:white;
+      font-weight:700;
+      box-shadow:var(--shadow);
+      flex:0 0 48px;
+    }
+    .title{
+      font-size:1rem;
+      font-weight:600;
+    }
+    .subtitle{
+      font-size:0.85rem;
+      color:var(--muted);
+    }
+    nav[role="navigation"]{
+      display:flex;
+      gap:var(--space);
+      align-items:center;
+    }
+    .nav-link{
+      background:transparent;
+      border:0;
+      color:var(--text);
+      padding:8px 12px;
+      border-radius:var(--radius);
+      cursor:pointer;
+      font-size:0.95rem;
+    }
+    .nav-link:focus{outline:none; box-shadow:0 0 0 3px rgba(0,123,255,0.14)}
+    .settings-btn{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      background:var(--card);
+      padding:8px 12px;
+      border-radius:var(--radius);
+      border:1px solid rgba(0,0,0,0.06);
+      cursor:pointer;
+    }
+
+    /* Hero / Shell */
+    main[role="main"]{
+      background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.9));
+      border-radius:var(--radius);
+      padding:calc(var(--space)*2);
+      box-shadow:var(--shadow);
+      min-height:480px;
+    }
+    .hero{
+      display:flex;
+      gap:calc(var(--space)*2);
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .hero-left{
+      flex:1 1 520px;
+      min-width:260px;
+    }
+    .hero-right{
+      width:360px;
+      min-width:260px;
+    }
+    .h1{
+      font-size:1.5rem;
+      margin:0 0 calc(var(--space)*1) 0;
+    }
+    .lead{
+      color:var(--muted);
+      margin:0 0 calc(var(--space)*2) 0;
+    }
+
+    .cta-row{
+      display:flex;
+      gap:var(--space);
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:0;
+      padding:10px 14px;
+      font-weight:600;
+      border-radius:var(--radius);
+      cursor:pointer;
+      background:var(--primary);
+      color:white;
+      box-shadow:0 2px 6px rgba(0,123,255,0.12);
+    }
+    .btn:disabled{opacity:0.6; cursor:not-allowed}
+    .btn.secondary{
+      background:transparent;
+      color:var(--text);
+      border:1px solid rgba(0,0,0,0.06);
+      font-weight:600;
+    }
+    .muted{
+      color:var(--muted);
+      font-size:0.9rem;
+    }
+
+    /* Controls panel & metrics */
+    aside[role="complementary"]{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:calc(var(--space)*1.5);
+      box-shadow:var(--shadow);
+      height:100%;
+      position:sticky;
+      top:calc(var(--space)*3);
+    }
+    .panel-title{font-weight:700;margin:0 0 calc(var(--space)*1) 0}
+    .controls{
+      display:grid;
+      gap:var(--space);
+    }
+    .controls .row{
+      display:flex;
+      gap:var(--space);
+      align-items:center;
+    }
+    .small{
+      font-size:0.9rem;
+    }
+    .input{
+      padding:8px 10px;
+      border-radius:var(--radius);
+      border:1px solid rgba(0,0,0,0.08);
+      background:white;
+      min-width:80px;
+    }
+
+    .metrics{
+      display:flex;
+      gap:var(--space);
+      margin-top: calc(var(--space)*2);
+      align-items:stretch;
+      flex-wrap:wrap;
+    }
+    .metric{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:12px;
+      flex:1 1 160px;
+      border:1px solid rgba(0,0,0,0.04);
+    }
+    .metric .label{font-size:0.85rem;color:var(--muted)}
+    .metric .value{font-weight:700;font-size:1.25rem;margin-top:6px}
+
+    .progress-wrap{
+      margin-top: calc(var(--space)*2);
+    }
+    .progress{
+      height:14px;
+      background:linear-gradient(90deg,#e9ecef,#f1f3f5);
+      border-radius:999px;
+      overflow:hidden;
+      border:1px solid rgba(0,0,0,0.03);
+    }
+    .progress > .bar{
+      height:100%;
+      background:linear-gradient(90deg,var(--primary),#0056b3);
+      width:0%;
+      transition:width 300ms linear;
+    }
+    .progress-meta{
+      display:flex;
+      justify-content:space-between;
+      font-size:0.85rem;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    .sparkline{
+      width:100%;
+      height:48px;
+      margin-top:calc(var(--space)*1);
+      background:linear-gradient(180deg, rgba(0,0,0,0.01), transparent);
+      border-radius:var(--radius);
+      padding:8px;
+    }
+
+    /* Log panel */
+    .log-panel{
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:calc(var(--space)*1);
+      margin-top:calc(var(--space)*2);
+      border:1px solid rgba(0,0,0,0.04);
+    }
+    .log-controls{
+      display:flex;
+      gap:var(--space);
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:calc(var(--space)*1);
+    }
+    .log-list{
+      height:220px;
+      overflow:auto;
+      padding:8px;
+      border-radius:var(--radius);
+      border:1px solid rgba(0,0,0,0.03);
+      background:linear-gradient(180deg,#fff,#f8fbff);
+      font-family:monospace;
+      font-size:0.85rem;
+    }
+    .log-item{
+      padding:6px 8px;
+      border-radius:4px;
+      margin-bottom:6px;
+      background:rgba(0,0,0,0.02);
+      display:flex;
+      gap:8px;
+      align-items:flex-start;
+    }
+    .log-ts{color:var(--muted);min-width:110px;flex:0 0 110px}
+    .log-text{flex:1}
+
+    /* Footer */
+    footer{
+      grid-column:1 / -1;
+      margin-top:calc(var(--space)*2);
+      font-size:0.85rem;
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:var(--space);
+    }
+
+    /* Modal */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.4);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:60;
+    }
+    .modal{
+      width:min(560px,95%);
+      background:var(--card);
+      border-radius:8px;
+      padding:calc(var(--space)*2);
+      box-shadow:0 8px 30px rgba(0,0,0,0.2);
+      outline:none;
+    }
+    .modal h3{margin:0 0 calc(var(--space)*1) 0}
+    .modal p{margin:0 0 calc(var(--space)*2) 0;color:var(--muted)}
+
+    /* Toasts */
+    .toast-area{
+      position:fixed;
+      right:calc(var(--space)*2);
+      bottom:calc(var(--space)*2);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      z-index:80;
+    }
+    .toast{
+      background:var(--card);
+      border-radius:6px;
+      padding:10px 12px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.12);
+      border-left:4px solid var(--primary);
+      min-width:220px;
+    }
+
+    /* Settings */
+    .settings{
+      display:flex;
+      gap:var(--space);
+      align-items:center;
+      justify-content:space-between;
+      margin-top:calc(var(--space)*1);
+    }
+    .toggle{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .switch{
+      width:44px;
+      height:24px;
+      background:#e9ecef;
+      border-radius:12px;
+      position:relative;
+      cursor:pointer;
+      flex:0 0 44px;
+    }
+    .switch .knob{
+      width:18px;height:18px;border-radius:50%;
+      background:white;position:absolute;top:3px;left:3px;box-shadow:0 2px 6px rgba(0,0,0,0.12);
+      transition:left 180ms ease, background 180ms ease;
+    }
+    .switch.on{background:linear-gradient(90deg,var(--primary),#0056b3)}
+    .switch.on .knob{left:23px}
+
+    /* Accessibility focus */
+    button:focus, a:focus, input:focus, select:focus, .switch:focus { outline:none; box-shadow:var(--focus) }
+
+    /* Responsive adjustments */
+    @media (max-width: 1000px){
+      .container{grid-template-columns:1fr; padding:0}
+      aside[role="complementary"]{position:relative; top:auto; width:100%}
+      .hero-right{width:100%}
+      body{padding:16px}
+    }
+
+    @media (max-width:480px){
+      .h1{font-size:1.15rem}
+      .title{font-size:0.95rem}
+      .logo{width:40px;height:40px}
+      .nav-link{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <header role="banner" aria-label="Main header">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">AI</div>
+        <div>
+          <div class="title">AI Training Demo</div>
+          <div class="subtitle">Deterministic in-browser simulation</div>
+        </div>
+      </div>
+
+      <nav role="navigation" aria-label="Primary navigation">
+        <!-- Links to other screens in the flow -->
+        <button class="nav-link" onclick="navigateTo('SCR-002')">Controls (SCR-002)</button>
+        <button class="nav-link" onclick="navigateTo('SCR-003')">Metrics (SCR-003)</button>
+        <button class="nav-link" onclick="navigateTo('SCR-004')">Event Log (SCR-004)</button>
+        <button class="nav-link" onclick="navigateTo('SCR-005')">Datasets (SCR-005)</button>
+        <button class="settings-btn" id="open-settings" aria-haspopup="dialog" aria-controls="settings-panel">
+          ⚙️ Settings
+        </button>
+      </nav>
+    </header>
+
+    <main role="main" aria-labelledby="hero-title" tabindex="-1">
+      <section class="hero" aria-label="Demo overview">
+        <div class="hero-left">
+          <h1 id="hero-title" class="h1">Run a deterministic training simulation in your browser</h1>
+          <p class="lead">Start the demo to watch epoch-by-epoch metrics and the virtualized event log update in real time. Toggle settings to persist preferences and opt into telemetry.</p>
+
+          <div class="cta-row" role="group" aria-label="Primary controls">
+            <button id="startBtn" class="btn" aria-pressed="false" aria-controls="controls-panel">Start Run</button>
+            <button id="pauseBtn" class="btn secondary" disabled>Pause</button>
+            <button id="resumeBtn" class="btn secondary" disabled>Resume</button>
+            <button id="resetBtn" class="btn secondary" disabled>Reset</button>
+            <label for="datasetSelect" class="muted" style="display:flex;align-items:center;gap:8px;">
+              Dataset:
+              <select id="datasetSelect" class="input" aria-label="Choose dataset">
+                <option value="mnist">MNIST (demo)</option>
+                <option value="cifar">CIFAR-10 (demo)</option>
+                <option value="tiny-imagenet">Tiny ImageNet (demo)</option>
+                <option value="custom">Custom (upload)</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="muted" style="margin-top:12px;">Quick actions:
+            <button class="nav-link" onclick="export
